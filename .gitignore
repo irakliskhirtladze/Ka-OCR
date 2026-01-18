@@ -208,3 +208,5 @@ __marimo__/
 
 
 dataset_gen/data/
+dataset_gen/.venv/
+dataset_gen/.env

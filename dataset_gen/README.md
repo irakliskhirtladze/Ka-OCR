@@ -19,12 +19,14 @@ sequences to reflect typos in words and very rare or specific words.
 ## Setup
 Using Python 3.10 and UV is strongly recommended to avoid dependency hell.
 
-1. **Install dependencies:**
+1. Open dataset_gen as standalone project in your IDE (assuming you use IDE).
+
+2. **Install dependencies:**
    ```bash
    uv sync
    ```
 
-2. **Create `.env` file** in project root:
+3. **Create `.env` file** in project root:
    ```
    HF_TOKEN=your_huggingface_token
    HF_DATASET_REPO=your_username/your_dataset_name
@@ -37,7 +39,7 @@ Using Python 3.10 and UV is strongly recommended to avoid dependency hell.
 ### Run
 
 ```bash
-python src/main.py
+python main.py
 ```
 
 ### What Happens
@@ -60,16 +62,14 @@ python src/main.py
 
 ```
 data/
-├── raw/              # Generated images (gitignored)
-│   ├── font1_0000.png
-│   ├── font1_0001.png
+├── raw/                        # Generated images (gitignored)
+│   ├── font1/
+│   │   ├── font1_0000.png
+│   │   ├── font1_0001.png
+│   │   └── ...
+│   ├── font2/
+│   │   └── ...
 │   └── ...
-├── metadata.csv      # Image labels (gitignored)
-└── ka-ocr.zip        # Zipped dataset for HF (gitignored)
+├── metadata.csv                # Image labels (gitignored)
+└── ka-ocr.zip                  # Zipped dataset for HF (gitignored)
 ```
-
-## Notes
-
-- Entire `data/` directory is gitignored.
-- This repo is for dataset generation only,
-use generated dataset for model training wherever suitable.
