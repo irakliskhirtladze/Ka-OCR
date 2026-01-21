@@ -286,7 +286,6 @@ def zip_dataset():
 
         # Add metadata.csv and version.txt to zip root
         zipf.write(metadata_file, arcname="metadata.csv")
-        zipf.write(version_file, arcname="version.txt")
 
     zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
     t2 = time.perf_counter()
@@ -316,6 +315,10 @@ def dataset_to_hf():
         print(f"Error: Zip file not found at {zip_path}")
         return
     
+    version_path = BASE_DIR / "data" / "version.txt"
+    if not version_path.exists():
+        print(f"Warning: version.txt not found at {version_path}")
+
     # Push to Hugging Face
     print(f"\nPushing to Hugging Face: {hf_dataset_repo}")
     try:
@@ -327,6 +330,17 @@ def dataset_to_hf():
             repo_type="dataset",
             token=hf_token
         )
+        
+        # Upload version.txt separately for easy version checking
+        if version_path.exists():
+            api.upload_file(
+                path_or_fileobj=str(version_path),
+                path_in_repo="version.txt",
+                repo_id=hf_dataset_repo,
+                repo_type="dataset",
+                token=hf_token
+            )
+        
         print(f"Successfully uploaded to https://huggingface.co/datasets/{hf_dataset_repo}")
     except Exception as e:
         print(f"Failed to upload to Hugging Face: {e}")
