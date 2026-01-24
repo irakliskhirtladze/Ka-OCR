@@ -208,6 +208,7 @@ __marimo__/
 
 
 data/
+checkpoints/
 
 dataset_gen/data/
 dataset_gen/.venv/
