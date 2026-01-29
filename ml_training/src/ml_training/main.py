@@ -1,4 +1,4 @@
-from ml_training.dataset import prepare_dataset
+from ml_training.setup import prepare_dataset
 
 
 def main() -> None:
