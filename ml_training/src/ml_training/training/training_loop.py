@@ -44,7 +44,7 @@ def train_model(
 
         if checkpoint_data and 'cer' in checkpoint_data:
             best_cer = checkpoint_data['cer']
-            print(f"Resumed Best CER from checkpoint: {best_cer:.4f}")
+            print(f"Resumed Best CER: {best_cer:.4f}")
 
     for epoch in range(start_epoch, epochs):
         model.train()
@@ -92,13 +92,13 @@ def train_model(
                                loader_generator)
                     print(f"===== Saved Resume Checkpoint {checkpoint_name} =====")
 
-                    print(f"🔎 Validating at Batch {batch_idx}...")
+                    print(f"Validating at Batch {batch_idx}...")
                     current_cer = validate_model(model, test_loader, tokenizer, device)
-                    print(f"   Batch {batch_idx} CER: {current_cer:.4f}")
+                    print(f"Batch {batch_idx} CER: {current_cer:.4f}")
 
                     if current_cer < best_cer:
                         best_cer = current_cer
-                        print(f"🏆 New Best Model found! (CER: {current_cer:.4f}) Saving best_model.pt...")
+                        print(f"New Best Model found! (CER: {current_cer:.4f}) Saving best_model.pt...")
 
                         torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
                         if check_env() == "colab":
