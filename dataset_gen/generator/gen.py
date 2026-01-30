@@ -284,7 +284,7 @@ def zip_dataset():
             arcname = img_file.relative_to(raw_dir)
             zipf.write(img_file, arcname=arcname)
 
-        # Add metadata.csv and version.txt to zip root
+        # Add metadata.csv to zip root
         zipf.write(metadata_file, arcname="metadata.csv")
 
     zip_size_mb = zip_path.stat().st_size / (1024 * 1024)

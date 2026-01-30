@@ -1,14 +1,17 @@
 import shutil
 import os
+import sys
 import zipfile
 from pathlib import Path
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 import tempfile
 from dataclasses import dataclass
+import subprocess
 
 
 def check_env() -> str:
+    """Determines the environment the session is running in. For example local PC, docker container or google colab"""
     # Check for colab-specific environment variable
     if "COLAB_RELEASE_TAG" in os.environ or "COLAB_GPU" in os.environ:
         return "colab"
@@ -32,7 +35,7 @@ def download_from_hf(repo_id: str, filename: str, local_dir: Path, token: str = 
 def dataset_needs_update(hf_repo: str, hf_token: str, local_version_path: Path) -> tuple[bool, str]:
     """
     Compares HF version with local version and checks if local dataset needs to be updated from HF.
-    Returns (needs_update, hf_version).
+    Returns tuple of (bool, hf_version string).
     """
     # Downloads HF version.txt to temp dir to avoid overwriting local
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -57,22 +60,25 @@ class Paths:
     drive_dataset_zip_path: Path | None = None
     drive_output_dir: Path | None = None
     drive_checkpoint_dir: Path | None = None
-    env_vars_path: Path | None = None
 
 
 def setup_environment() -> Paths:
     """
     Setup environment for model training depending on where the session is running.
-    Returns paths dataclass.
+    Returns dataclass instance with paths to dataset, checkpoints, outputs, etc.
     """
     env = check_env()
     print(f"running on {env}")
 
-    if check_env() == "colab":
-        # Here we setup colab session with google drive for permanent storage
-        !pip install evaluate jiwer
+    if check_env() == "colab":  # Here we set up colab session with google drive for permanent storage
+        lib_install_result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "evaluate", "jiwer"],
+            capture_output=True,
+            text=True,
+            check=True  # crashes script with an error if install fails
+        )
+        print(lib_install_result.stdout)
 
-        from evaluate import load
         from google.colab import drive
         drive.mount('/content/drive')
 
@@ -86,31 +92,48 @@ def setup_environment() -> Paths:
             drive_checkpoint_dir=base_dir / "drive/MyDrive/Colab Notebooks/trocr-ka/checkpoints",
         )
 
-    else:
-        # Setup for local session
+        # make sure session dirs exist. drive dirs are set up manually, no need for check
+        paths.output_dir.mkdir(parents=True, exist_ok=True)
+        paths.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+        if not paths.dataset_dir.exists():
+            print("\nExtracting dataset zip from Drive to session storage...")
+            try:
+                # -q "quiet", don't print filenames; -o overwrite existing files; -d specifies the destination dir
+                cmd = ["unzip", "-o", "-q", str(paths.drive_dataset_zip_path), "-d", str(paths.dataset_dir)]
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                print("Extraction successful!")
+            except subprocess.CalledProcessError as e:
+                print(f"Extraction failed!\nError: {e.stderr}")
+        else:
+            print("Dataset already copied to colab session.")
+
+    else:  # Setup for local session
         base_dir = Path(__file__).resolve().parent.parent.parent
         load_dotenv(base_dir / ".env")
 
-        data_dir = base_dir / "data"
-        data_dir.mkdir(parents=True, exist_ok=True)
+        paths = Paths(
+            dataset_dir=base_dir / "data",
+            output_dir=base_dir / "output",
+            checkpoint_dir=base_dir / "checkpoints"
+        )
+
+        paths.dataset_dir.mkdir(parents=True, exist_ok=True)
+        paths.output_dir.mkdir(parents=True, exist_ok=True)
+        paths.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         hf_repo = os.getenv("HF_DATASET_REPO")
         hf_token = os.getenv("HF_TOKEN")
 
-        if not hf_repo:
-            raise ValueError("HF_DATASET_REPO not set in .env")
-
-        local_version_path = data_dir / "version.txt"
-
         print("Downloading version file from HuggingFace for comparison...")
-        should_download, hf_version = needs_download(hf_repo, hf_token, local_version_path)
+        needs_update, hf_version = dataset_needs_update(hf_repo, hf_token, paths.dataset_dir / "version.txt")
 
-        if should_download:
-            print(f"dataset needs updating (HF version: {hf_version})")
+        if needs_update:
+            print(f"dataset needs update (HF version: {hf_version})")
 
-            # Clear old data first
+            # Clear everything in local dataset dir
             print("Clearing old dataset...")
-            for item in data_dir.iterdir():
+            for item in paths.dataset_dir.iterdir():
                 if item.is_dir():
                     shutil.rmtree(item)
                 else:
@@ -118,22 +141,18 @@ def setup_environment() -> Paths:
 
             # Download zip and extract
             print("downloading...")
-            zip_path = download_from_hf(hf_repo, "ka-ocr.zip", data_dir, hf_token, force=True)
+            zip_path = download_from_hf(hf_repo, "ka-ocr.zip", paths.dataset_dir, hf_token, force=True)
             print("Extracting dataset...")
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(data_dir)
+                zip_ref.extractall(paths.dataset_dir)
 
             # Delete zip
             zip_path.unlink()
             print("Extraction complete, zip deleted")
 
-            # Save the new version file locally
-            with open(local_version_path, "w") as f:
-                f.write(hf_version)
-
-            return data_dir
+            # Redownload version.txt from HF
+            download_from_hf(hf_repo, "version.txt", paths.dataset_dir, hf_token, force=True)
 
         print(f"Local dataset is the newest version already: {hf_version}. No update needed.")
 
-    paths.checkpoint_dir.mkdir(parents=True, exist_ok=True)
     return paths

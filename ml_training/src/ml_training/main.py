@@ -1,9 +1,9 @@
-from ml_training.setup import prepare_dataset
+from ml_training.setup import setup_environment
 
 
 def main() -> None:
-    dataset_dir = prepare_dataset()
-    for item in dataset_dir.iterdir():
+    paths = setup_environment()
+    for item in paths.dataset_dir.iterdir():
         print(item)
 
 
