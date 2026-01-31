@@ -8,7 +8,7 @@ from transformers import TrOCRProcessor
 
 from ml_training.dataset import GeorgianTokenizer
 from ml_training.setup import Paths, check_env
-from checkpoints import load_latest_state, save_state
+from ml_training.training.checkpoints import load_latest_state, save_state
 from ml_training.training.validation import validate_model
 
 
@@ -40,7 +40,7 @@ def train_model(
     if resume_latest:
         # Load model weights and RNG states only (not optimizer/scaler)
         start_epoch, start_batch, checkpoint_data = load_latest_state(
-            model, optimizer, scaler, loader_generator,
+            paths, model, optimizer, scaler, loader_generator,
             load_optimizer=False, load_scaler=False
         )
 

@@ -1,4 +1,26 @@
-def save_state(epoch: int, batch_idx: int, model: , optimizer, scaler, loss, cer, filename, generator, keep=5):
+import os
+import random
+import shutil
+from pathlib import Path
+
+import numpy as np
+import torch
+
+from ml_training.setup import Paths, check_env
+
+
+def save_state(
+        paths: Paths,
+        epoch: int,
+        batch_idx: int,
+        model: torch.nn.Module,
+        optimizer,
+        scaler,
+        loss,
+        cer,
+        filename,
+        generator,
+        keep=5):
     """
     Saves a resume checkpoint and maintains a rolling window of the last 'keep' files.
     Does NOT touch 'best_model.pt'.
@@ -17,48 +39,41 @@ def save_state(epoch: int, batch_idx: int, model: , optimizer, scaler, loss, cer
         'rng_state_python': random.getstate(),
     }
 
-    # 1. Save Locally
-    local_path = checkpoint_dir / filename
+    # Save Locally
+    local_path = paths.checkpoint_dir / filename
     torch.save(checkpoint, local_path)
 
-    # 2. Sync to Drive (Colab safe-write)
-    if check_env() == "colab":
-        drive_path = drive_checkpoint_dir / filename
+    if check_env() == "colab":  # Sync to Drive (Colab safe-write)
+        drive_path = paths.drive_checkpoint_dir / filename
         # Write to temp file first, then move (atomic write) to prevent corruption
         temp_path = drive_path.with_suffix(".tmp")
         shutil.copy(local_path, temp_path)
         os.replace(temp_path, drive_path)
-        print(f"✅ Saved & Synced: {filename}")
-
-        # 3. Cleanup: Keep only last 'keep' checkpoints in Drive
-        # We filter for files matching our pattern to avoid deleting 'best_model.pt'
-        ckpts = sorted(drive_checkpoint_dir.glob("checkpoint_e*_b*.pt"), key=os.path.getmtime)
-        if len(ckpts) > keep:
-            for old_ckpt in ckpts[:-keep]:
-                old_ckpt.unlink()
-                print(f"🗑️ Deleted old checkpoint: {old_ckpt.name}")
-
+        print(f"Saved and synced to drive: {filename}")
+        ckpts = sorted(paths.drive_checkpoint_dir.glob("checkpoint_e*_b*.pt"), key=os.path.getmtime)
     else:
-        print(f"✅ Saved locally: {filename}")
-        # Local Cleanup
-        ckpts = sorted(checkpoint_dir.glob("checkpoint_e*_b*.pt"), key=os.path.getmtime)
-        if len(ckpts) > keep:
-            for old_ckpt in ckpts[:-keep]:
-                old_ckpt.unlink()
-                print(f"🗑️ Deleted old local checkpoint: {old_ckpt.name}")
+        print(f"Saved locally: {filename}")
+        ckpts = sorted(paths.checkpoint_dir.glob("checkpoint_e*_b*.pt"), key=os.path.getmtime)
+
+    # Keep only last 'keep' number of checkpoints
+    # We filter for files matching our pattern to avoid deleting 'best_model.pt'
+    if len(ckpts) > keep:
+        for old_ckpt in ckpts[:-keep]:
+            old_ckpt.unlink()
+            print(f"Deleted old checkpoint: {old_ckpt.name}")
 
 
-def load_latest_state(model, optimizer, scaler, generator, load_optimizer=False, load_scaler=False):
+def load_latest_state(paths, model, optimizer, scaler, generator, load_optimizer=False, load_scaler=False):
     """Load checkpoint. By default only loads model weights and RNG states (safe for resume)."""
-    search_path = drive_checkpoint_dir if check_env() == "colab" else checkpoint_dir
-    checkpoints = list(search_path.glob("checkpoint_e*_b*.pt"))
+    search_path = paths.drive_checkpoint_dir if check_env() == "colab" else paths.checkpoint_dir
+    checkpoints: list[Path] = list(search_path.glob("checkpoint_e*_b*.pt"))
 
     if not checkpoints:
-        print("🚀 No resume checkpoints found. Starting fresh.")
+        print("No resume checkpoints found. Starting fresh.")
         return 0, -1, None
 
     latest_ckpt_path = max(checkpoints, key=os.path.getmtime)
-    print(f"🔄 Resuming from: {latest_ckpt_path.name}")
+    print(f"Resuming from: {latest_ckpt_path.name}")
 
     try:
         ckpt = torch.load(latest_ckpt_path, map_location="cpu", weights_only=False)
@@ -85,5 +100,5 @@ def load_latest_state(model, optimizer, scaler, generator, load_optimizer=False,
         return ckpt['epoch'], ckpt['batch_idx'], ckpt
 
     except Exception as e:
-        print(f"❌ Error loading checkpoint {latest_ckpt_path.name}: {e}")
+        print(f"Error loading checkpoint {latest_ckpt_path.name}: {e}")
         return 0, -1, None
