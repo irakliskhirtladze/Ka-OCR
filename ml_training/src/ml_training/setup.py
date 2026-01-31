@@ -71,13 +71,13 @@ def setup_environment() -> Paths:
     print(f"running on {env}")
 
     if check_env() == "colab":  # Here we set up colab session with google drive for permanent storage
-        lib_install_result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "evaluate", "jiwer"],
-            capture_output=True,
-            text=True,
-            check=True  # crashes script with an error if install fails
-        )
-        print(lib_install_result.stdout)
+        # lib_install_result = subprocess.run(
+        #     [sys.executable, "-m", "pip", "install", "evaluate", "jiwer"],
+        #     capture_output=True,
+        #     text=True,
+        #     check=True  # crashes script with an error if install fails
+        # )
+        # print(lib_install_result.stdout)
 
         from google.colab import drive
         drive.mount('/content/drive')
