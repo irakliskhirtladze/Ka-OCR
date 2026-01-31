@@ -4,10 +4,12 @@ import shutil
 import torch
 from torch.optim import AdamW
 from torch.amp import GradScaler, autocast
+from transformers import TrOCRProcessor
 
 from ml_training.dataset import GeorgianTokenizer
 from ml_training.setup import Paths, check_env
 from checkpoints import load_latest_state, save_state
+from ml_training.training.validation import validate_model
 
 
 def train_model(
@@ -133,3 +135,40 @@ def train_model(
             torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
             if check_env() == "colab":
                 shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
+
+
+def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer):
+    """Save the final trained model and processor."""
+    model_path = paths.output_dir / "model"
+    processor_path = paths.output_dir / "processor"
+
+    # Save model and processor
+    model.save_pretrained(model_path)
+    processor.save_pretrained(processor_path)
+
+    # Save custom tokenizer vocab
+    tokenizer_path = paths.output_dir / "tokenizer_vocab.json"
+    import json
+    with open(tokenizer_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            'char_to_id': tokenizer.char_to_id,
+            'id_to_char': {str(k): v for k, v in tokenizer.id_to_char.items()},
+            'pad_token_id': tokenizer.pad_token_id,
+            'bos_token_id': tokenizer.bos_token_id,
+            'eos_token_id': tokenizer.eos_token_id,
+            'unk_token_id': tokenizer.unk_token_id,
+        }, f, ensure_ascii=False, indent=2)
+
+    print(f"Model saved to: {model_path}")
+    print(f"Processor saved to: {processor_path}")
+    print(f"Tokenizer vocab saved to: {tokenizer_path}")
+
+    # Sync to Drive on Colab
+    if check_env() == "colab":
+        # Create a zip of the output for easy download
+        zip_path = paths.output_dir / "final_model.zip"
+        shutil.make_archive(str(zip_path.with_suffix('')), 'zip', paths.output_dir)
+
+        # Copy zip to Drive
+        shutil.copy(zip_path, paths.drive_output_dir / "final_model.zip")
+        print(f"Model zip synced to Drive: {paths.drive_output_dir / 'final_model.zip'}")

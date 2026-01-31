@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import Dataset
 
-from sklearn.model_selection import train_test_split
 import pandas as pd
 from PIL import Image
 
@@ -122,13 +121,3 @@ class GeorgianOCRDataset(Dataset):
             "pixel_values": pixel_values.squeeze(),
             "labels": torch.tensor(labels)
         }
-
-
-def train_test(paths: Paths, test_size: float = 0.1) -> tuple[pd.DataFrame, pd.DataFrame]:
-    df = pd.read_csv(paths.dataset_dir/"metadata.csv")
-    return train_test_split(
-        df,
-        test_size=test_size,
-        random_state=42,
-        shuffle=True
-    )
