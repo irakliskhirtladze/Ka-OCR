@@ -1,13 +1,12 @@
-import shutil
 import os
-import sys
+import shutil
+import subprocess
+import tempfile
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
-import tempfile
-from dataclasses import dataclass
-import subprocess
 
 
 def check_env() -> str:
@@ -70,7 +69,7 @@ def setup_environment() -> Paths:
     env = check_env()
     print(f"running on {env}")
 
-    if check_env() == "colab":  # Here we set up colab session with google drive for permanent storage
+    if check_env() == "colab":  # set up colab session with google drive for permanent storage
         base_dir = Path("/content")
         paths = Paths(
             dataset_dir=base_dir / "data",

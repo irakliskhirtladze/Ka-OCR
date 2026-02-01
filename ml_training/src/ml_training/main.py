@@ -39,6 +39,7 @@ def main() -> None:
     test_dataset = GeorgianOCRDataset(test_df, str(paths.dataset_dir), processor, tokenizer)
 
     loader_generator = torch.Generator()
+    loader_generator.manual_seed(42)
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, generator=loader_generator,
                               num_workers=2 if check_env() == "colab" else 6)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)

@@ -2,25 +2,25 @@ import os
 import random
 import shutil
 from pathlib import Path
-
 import numpy as np
 import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from ml_training.setup import Paths, check_env
 
 
-def save_state(
-        paths: Paths,
-        epoch: int,
-        batch_idx: int,
-        model: torch.nn.Module,
-        optimizer,
-        scaler,
-        loss,
-        cer,
-        filename,
-        generator,
-        keep=5):
+def save_state(paths: Paths,
+               epoch: int,
+               batch_idx: int,
+               model: torch.nn.Module,
+               optimizer: torch.optim.Optimizer,
+               scaler: torch.amp.GradScaler,
+               loss: float,
+               cer: float,
+               filename: str,
+               generator: torch.Generator,
+               scheduler: ReduceLROnPlateau,
+               keep: int = 5) -> None:
     """
     Saves a resume checkpoint and maintains a rolling window of the last 'keep' files.
     Does NOT touch 'best_model.pt'.
@@ -30,6 +30,7 @@ def save_state(
         'batch_idx': batch_idx,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict(),
         'scaler_state_dict': scaler.state_dict(),
         'generator_state': generator.get_state(),
         'loss': loss,
@@ -39,13 +40,12 @@ def save_state(
         'rng_state_python': random.getstate(),
     }
 
-    # Save Locally
+    # Save locally
     local_path = paths.checkpoint_dir / filename
     torch.save(checkpoint, local_path)
 
-    if check_env() == "colab":  # Sync to Drive (Colab safe-write)
+    if check_env() == "colab":  # atomic sync to drive
         drive_path = paths.drive_checkpoint_dir / filename
-        # Write to temp file first, then move (atomic write) to prevent corruption
         temp_path = drive_path.with_suffix(".tmp")
         shutil.copy(local_path, temp_path)
         os.replace(temp_path, drive_path)
@@ -55,15 +55,21 @@ def save_state(
         print(f"Saved locally: {filename}")
         ckpts = sorted(paths.checkpoint_dir.glob("checkpoint_e*_b*.pt"), key=os.path.getmtime)
 
-    # Keep only last 'keep' number of checkpoints
-    # We filter for files matching our pattern to avoid deleting 'best_model.pt'
+    # Keep only last 'keep' number of checkpoints. avoids deleting 'best_model.pt'
     if len(ckpts) > keep:
         for old_ckpt in ckpts[:-keep]:
             old_ckpt.unlink()
             print(f"Deleted old checkpoint: {old_ckpt.name}")
 
 
-def load_latest_state(paths, model, optimizer, scaler, generator, load_optimizer=False, load_scaler=False):
+def load_latest_state(paths: Paths,
+                      model: torch.nn.Module,
+                      optimizer: torch.optim.Optimizer,
+                      scaler: torch.amp.GradScaler,
+                      generator: torch.Generator,
+                      scheduler: ReduceLROnPlateau,
+                      load_optimizer: bool = False,
+                      load_scaler: bool = False) -> tuple[int, int, torch.nn.Module | None]:
     """Load checkpoint. By default only loads model weights and RNG states (safe for resume)."""
     search_path = paths.drive_checkpoint_dir if check_env() == "colab" else paths.checkpoint_dir
     checkpoints: list[Path] = list(search_path.glob("checkpoint_e*_b*.pt"))
@@ -86,6 +92,8 @@ def load_latest_state(paths, model, optimizer, scaler, generator, load_optimizer
         if load_scaler and 'scaler_state_dict' in ckpt:
             scaler.load_state_dict(ckpt['scaler_state_dict'])
 
+        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+
         # RNG state restoration
         if 'rng_state_torch' in ckpt:
             rng_state = ckpt['rng_state_torch']
@@ -93,9 +101,12 @@ def load_latest_state(paths, model, optimizer, scaler, generator, load_optimizer
                 rng_state = rng_state.to(torch.uint8)
             torch.set_rng_state(rng_state)
 
-        if 'rng_state_numpy' in ckpt: np.random.set_state(ckpt['rng_state_numpy'])
-        if 'rng_state_python' in ckpt: random.setstate(ckpt['rng_state_python'])
-        if 'generator_state' in ckpt: generator.set_state(ckpt['generator_state'])
+        if 'rng_state_numpy' in ckpt:
+            np.random.set_state(ckpt['rng_state_numpy'])
+        if 'rng_state_python' in ckpt:
+            random.setstate(ckpt['rng_state_python'])
+        if 'generator_state' in ckpt:
+            generator.set_state(ckpt['generator_state'])
 
         return ckpt['epoch'], ckpt['batch_idx'], ckpt
 

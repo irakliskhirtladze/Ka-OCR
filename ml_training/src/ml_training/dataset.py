@@ -1,10 +1,7 @@
-import torch
-from torch.utils.data import Dataset
-
 import pandas as pd
+import torch
 from PIL import Image
-
-from ml_training.setup import Paths
+from torch.utils.data import Dataset
 
 
 class GeorgianTokenizer:

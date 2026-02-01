@@ -1,8 +1,9 @@
 import gc
 import shutil
-
+import json
 import torch
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.amp import GradScaler, autocast
 from transformers import TrOCRProcessor
 
@@ -31,6 +32,7 @@ def train_model(
     # Always create fresh optimizer and scaler to avoid OOM from stale state
     optimizer = AdamW(model.parameters(), lr=learning_rate)
     scaler = GradScaler('cuda', enabled=(device.type == "cuda"))
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, min_lr=1e-6)
 
     # Initialize defaults
     start_epoch = 0
@@ -40,7 +42,7 @@ def train_model(
     if resume_latest:
         # Load model weights and RNG states only (not optimizer/scaler)
         start_epoch, start_batch, checkpoint_data = load_latest_state(
-            paths, model, optimizer, scaler, loader_generator,
+            paths, model, optimizer, scaler, loader_generator, scheduler,
             load_optimizer=False, load_scaler=False
         )
 
@@ -91,11 +93,12 @@ def train_model(
                 if batch_idx > 0 and batch_idx % save_every == 0:
                     checkpoint_name = f"checkpoint_e{epoch}_b{batch_idx}.pt"
                     save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(), best_cer,
-                               checkpoint_name, loader_generator)
+                               checkpoint_name, loader_generator, scheduler=scheduler)
                     print(f"===== Saved Resume Checkpoint {checkpoint_name} =====")
 
                     print(f"Validating at Batch {batch_idx}...")
                     current_cer = validate_model(model, test_loader, tokenizer, device)
+                    scheduler.step(current_cer)
                     print(f"Batch {batch_idx} CER: {current_cer:.4f}")
 
                     if current_cer < best_cer:
@@ -125,10 +128,11 @@ def train_model(
 
         # --- END OF EPOCH SAVE
         print(f"Epoch {epoch} complete. Performing final validation and save...")
-        current_cer = validate_model(model, test_loader, tokenizer, device)
+        current_cer = validate_model(model, test_loader, tokenizer, device, max_batches=None, num_beams=4)
+        scheduler.step(current_cer)
 
         save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(),
-                   current_cer, f"checkpoint_e{epoch}_final.pt", loader_generator)
+                   current_cer, f"checkpoint_e{epoch}_final.pt", loader_generator, scheduler=scheduler)
 
         if current_cer < best_cer:
             best_cer = current_cer
@@ -148,7 +152,7 @@ def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProce
 
     # Save custom tokenizer vocab
     tokenizer_path = paths.output_dir / "tokenizer_vocab.json"
-    import json
+
     with open(tokenizer_path, 'w', encoding='utf-8') as f:
         json.dump({
             'char_to_id': tokenizer.char_to_id,
