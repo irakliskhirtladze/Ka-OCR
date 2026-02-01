@@ -90,8 +90,8 @@ def train_model(
 
                 if batch_idx > 0 and batch_idx % save_every == 0:
                     checkpoint_name = f"checkpoint_e{epoch}_b{batch_idx}.pt"
-                    save_state(epoch, batch_idx, model, optimizer, scaler, loss.item(), best_cer, checkpoint_name,
-                               loader_generator)
+                    save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(), best_cer,
+                               checkpoint_name, loader_generator)
                     print(f"===== Saved Resume Checkpoint {checkpoint_name} =====")
 
                     print(f"Validating at Batch {batch_idx}...")
@@ -127,7 +127,7 @@ def train_model(
         print(f"Epoch {epoch} complete. Performing final validation and save...")
         current_cer = validate_model(model, test_loader, tokenizer, device)
 
-        save_state(epoch, batch_idx, model, optimizer, scaler, loss.item(),
+        save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(),
                    current_cer, f"checkpoint_e{epoch}_final.pt", loader_generator)
 
         if current_cer < best_cer:
