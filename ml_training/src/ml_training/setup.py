@@ -10,11 +10,15 @@ from huggingface_hub import hf_hub_download
 
 
 def check_env() -> str:
-    """Determines the environment the session is running in. For example local PC, docker container or google colab"""
-    if "COLAB_RELEASE_TAG" in os.environ or "COLAB_GPU" in os.environ:
-        return "colab"
-    elif os.environ.get('KAGGLE_KERNEL_RUN_TYPE'):
+    """Determines if running in Kaggle, Colab, or Local with high reliability."""
+    # Kaggle-specific check (Primary)
+    if os.environ.get('KAGGLE_KERNEL_RUN_TYPE') or os.path.exists('/kaggle/working'):
         return "kaggle"
+
+    # Colab-specific check
+    # Check for 'google.colab' module or unique Colab env var
+    if 'COLAB_RELEASE_TAG' in os.environ or 'COLAB_BACKEND_VERSION' in os.environ:
+        return "colab"
 
     return "local"
 
