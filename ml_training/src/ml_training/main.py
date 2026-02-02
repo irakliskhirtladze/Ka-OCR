@@ -6,7 +6,6 @@ from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
 from ml_training.dataset import GeorgianTokenizer, GeorgianOCRDataset
 from ml_training.setup import setup_environment, check_env
-from ml_training.temp import save_debug_samples
 from ml_training.training.training_loop import train_model, save_final_model
 
 
