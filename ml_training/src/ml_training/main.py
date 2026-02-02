@@ -58,7 +58,7 @@ def main() -> None:
         epochs=3,
         save_every=1000,
         max_grad_norm=1.0,
-        learning_rate=1e-5,
+        learning_rate=5e-6,
         resume_latest=True
     )
     save_final_model(paths, model, processor, tokenizer)

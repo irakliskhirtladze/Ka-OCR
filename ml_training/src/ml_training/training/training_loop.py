@@ -30,7 +30,7 @@ def train_model(
     """Main pytorch training loop to fine-tune TrOCR pretrained model."""
 
     # Always create fresh optimizer and scaler to avoid OOM from stale state
-    optimizer = AdamW(model.parameters(), lr=learning_rate)
+    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scaler = GradScaler('cuda', enabled=(device.type == "cuda"))
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, min_lr=1e-6)
 
