@@ -22,7 +22,7 @@ def main() -> None:
     )
 
     # set up processor and tokenizer
-    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
+    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed", use_fast=True)
     tokenizer = GeorgianTokenizer(max_length=32)
 
     # Load model and resize token embeddings
