@@ -129,6 +129,7 @@ def train_model(
         # --- END OF EPOCH SAVE
         print(f"Epoch {epoch} complete. Performing final validation and save...")
         current_cer = validate_model(model, test_loader, tokenizer, device, max_batches=None, num_beams=4)
+        print(f"CER after {epoch} epochs: {current_cer:.4f}")
         scheduler.step(current_cer)
 
         save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(),
