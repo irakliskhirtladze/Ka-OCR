@@ -11,9 +11,10 @@ from huggingface_hub import hf_hub_download
 
 def check_env() -> str:
     """Determines the environment the session is running in. For example local PC, docker container or google colab"""
-    # Check for colab-specific environment variable
     if "COLAB_RELEASE_TAG" in os.environ or "COLAB_GPU" in os.environ:
         return "colab"
+    elif os.environ.get('KAGGLE_KERNEL_RUN_TYPE'):
+        return "kaggle"
 
     return "local"
 
@@ -95,6 +96,16 @@ def setup_environment() -> Paths:
                 print(f"Extraction failed!\nError: {e.stderr}")
         else:
             print("Dataset already copied to colab session.")
+
+    elif check_env() == "kaggle":  # setup for kaggle
+        base_dir = Path("/kaggle")
+        paths = Paths(
+            dataset_dir=base_dir / "input/ka-ocr",
+            output_dir=base_dir / "working/output",
+            checkpoint_dir=base_dir / "working/checkpoints",
+        )
+        paths.output_dir.mkdir(parents=True, exist_ok=True)
+        paths.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     else:  # Setup for local session
         base_dir = Path(__file__).resolve().parent.parent.parent
