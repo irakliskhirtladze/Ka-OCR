@@ -18,6 +18,8 @@ dependencies = [
     "pyarrow>=19.0.0",
     "jiwer>=3.1.0",
     "matplotlib>=3.10.0",
+    "albumentations>=2.0.8",
+    "torchvision>=0.24.1",
 ]
 
 

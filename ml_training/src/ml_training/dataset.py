@@ -1,7 +1,11 @@
+import cv2
+import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from transformers import TrOCRProcessor
+import albumentations as A
 
 
 class GeorgianTokenizer:
@@ -71,11 +75,21 @@ class GeorgianTokenizer:
 
 
 class GeorgianOCRDataset(Dataset):
-    def __init__(self, df: pd.DataFrame, dataset_dir: str, processor, tokenizer: GeorgianTokenizer):
+    def __init__(self, df: pd.DataFrame, dataset_dir: str, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer,
+                 augment: bool = False):
         self.df = df.reset_index(drop=True)
         self.dataset_dir = dataset_dir
         self.processor = processor
         self.tokenizer = tokenizer  # custom tokenizer
+        self.augment = augment
+
+        # augmentation pipeline
+        self.aug_pipeline = A.Compose([
+            A.Rotate(limit=(2, 2), p=0.5, border_mode=cv2.BORDER_CONSTANT, fill=(255, 255, 255)),
+            A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.3),
+            A.GaussianBlur(blur_limit=(3, 3), p=0.2),
+            A.GaussNoise(std_range=(0.1, 0.3), p=0.2),
+        ])
 
     def __len__(self) -> int:
         return len(self.df)
@@ -105,13 +119,15 @@ class GeorgianOCRDataset(Dataset):
         offset = ((target_size - new_w) // 2, (target_size - new_h) // 2)
         new_img.paste(img, offset)
 
+        # augment
+        if self.augment:
+            img_np = np.array(new_img)
+            augmented = self.aug_pipeline(image=img_np)["image"]
+            new_img = Image.fromarray(augmented)
+
         # Use Processor for Normalization
         pixel_values = self.processor(new_img, return_tensors="pt").pixel_values
-
-        # Tokenize Georgian Text
         labels = self.tokenizer.encode(text)
-
-        # Replace padding token id with -100 so it's ignored by the loss function
         labels = [label if label != self.tokenizer.pad_token_id else -100 for label in labels]
 
         return {

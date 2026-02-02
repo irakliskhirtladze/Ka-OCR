@@ -6,6 +6,7 @@ from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
 from ml_training.dataset import GeorgianTokenizer, GeorgianOCRDataset
 from ml_training.setup import setup_environment, check_env
+from ml_training.temp import save_debug_samples
 from ml_training.training.training_loop import train_model, save_final_model
 
 
@@ -35,7 +36,7 @@ def main() -> None:
     model.config.eos_token_id = tokenizer.eos_token_id
 
     # set up datasets and loader generators
-    train_dataset = GeorgianOCRDataset(train_df, str(paths.dataset_dir), processor, tokenizer)
+    train_dataset = GeorgianOCRDataset(train_df, str(paths.dataset_dir), processor, tokenizer, augment=True)
     test_dataset = GeorgianOCRDataset(test_df, str(paths.dataset_dir), processor, tokenizer)
 
     loader_generator = torch.Generator()
