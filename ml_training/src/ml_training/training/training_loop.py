@@ -74,15 +74,15 @@ def train_model(
                 pixel_values: torch.Tensor = batch["pixel_values"].to(device)
                 labels: torch.Tensor = batch["labels"].to(device)
 
+                # forward pass
                 with autocast('cuda', enabled=(device.type == "cuda")):
                     outputs = model(pixel_values=pixel_values, labels=labels)
                     loss: torch.Tensor = outputs.loss
 
+                # backpropagation
                 scaler.scale(loss).backward()
-
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-
                 scaler.step(optimizer)
                 scaler.update()
                 optimizer.zero_grad(set_to_none=True)
