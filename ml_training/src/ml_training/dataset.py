@@ -85,10 +85,10 @@ class GeorgianOCRDataset(Dataset):
 
         # augmentation pipeline
         self.aug_pipeline = A.Compose([
-            A.Rotate(limit=(2, 2), p=0.5, border_mode=cv2.BORDER_CONSTANT, fill=(255, 255, 255)),
-            A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.3),
-            A.GaussianBlur(blur_limit=(3, 3), p=0.2),
-            A.GaussNoise(std_range=(0.1, 0.3), p=0.2),
+            A.Rotate(limit=(4, 4), border_mode=cv2.BORDER_CONSTANT, fill=(255, 255, 255), p=0.7),
+            A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.5),
+            A.GaussianBlur(blur_limit=(3, 3), p=0.5),
+            A.GaussNoise(std_range=(0.1, 0.3), p=0.7),
         ])
 
     def __len__(self) -> int:
