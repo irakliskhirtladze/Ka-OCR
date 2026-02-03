@@ -27,6 +27,8 @@ def main() -> None:
 
     # Load model and resize token embeddings
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+    for param in model.encoder.parameters():
+        param.requires_grad = False  # Freeze entire encoder part of the model
     model.decoder.resize_token_embeddings(len(tokenizer))  # Resize to 37
 
     # Configure special tokens
