@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import save_image
 
 
-def save_debug_samples(dataloader, tokenizer, output_dir, n_images=16):
+def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
     """Saves un-normalized augmented samples to disk for visual inspection."""
     debug_path = os.path.join(output_dir, "debug_augs")
     os.makedirs(debug_path, exist_ok=True)

@@ -1,10 +1,11 @@
-from evaluate import load
+import evaluate
 import torch
+from transformers import EvalPrediction
 
 from ml_training.dataset import GeorgianTokenizer
 
 
-cer_metric = load("cer")
+cer_metric = evaluate.load("cer")
 
 
 def validate_model(
@@ -49,3 +50,18 @@ def validate_model(
 
     # Calculate Character Error Rate
     return cer_metric.compute(predictions=predictions, references=references)
+
+
+def compute_metrics_seq2seq(pred: EvalPrediction, tokenizer: GeorgianTokenizer) -> dict[str, float]:
+    labels_ids = pred.label_ids
+    pred_ids = pred.predictions
+
+    # Decode predictions and labels
+    # -100 is the ignore index we set in our Dataset
+    labels_ids[labels_ids == -100] = tokenizer.pad_token_id
+    pred_str = tokenizer.batch_decode(pred_ids)
+    label_str = tokenizer.batch_decode(labels_ids)
+
+    cer = cer_metric.compute(predictions=pred_str, references=label_str)
+
+    return {"cer": cer}

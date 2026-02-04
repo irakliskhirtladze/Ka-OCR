@@ -39,6 +39,9 @@ class GeorgianTokenizer:
 
         self.max_length = max_length
 
+    def __len__(self) -> int:
+        return len(self.vocab)
+
     def encode(self, text: str, padding: bool = True) -> list[int]:
         """Convert Georgian text to token IDs."""
         # Start with BOS token
@@ -61,17 +64,29 @@ class GeorgianTokenizer:
 
         return ids
 
-    def decode(self, token_ids: list[int]) -> str:
-        """Convert token IDs back to text."""
+    def batch_decode(self, sequences: np.ndarray, skip_special_tokens: bool = True) -> list[str]:
+        """Decodes a batch of token IDs (list of lists or torch Tensors)."""
+        return [self.decode(seq, skip_special_tokens=skip_special_tokens) for seq in sequences]
+
+    def decode(self, token_ids: list[int], skip_special_tokens: bool = True) -> str:
+        """Convert token IDs back to text, stopping at EOS."""
+        # Convert torch tensor to list if necessary
+        if hasattr(token_ids, "tolist"):
+            token_ids = token_ids.tolist()
+
         chars = []
         for token_id in token_ids:
-            if token_id in (self.pad_token_id, self.bos_token_id, self.eos_token_id):
-                continue
-            chars.append(self.id_to_char.get(token_id, ""))
-        return "".join(chars)
+            # Stop decoding if we hit the EOS token
+            if token_id == self.eos_token_id and skip_special_tokens:
+                break
 
-    def __len__(self) -> int:
-        return len(self.vocab)
+            # Skip BOS and PAD if requested
+            if skip_special_tokens and token_id in (self.pad_token_id, self.bos_token_id):
+                continue
+
+            chars.append(self.id_to_char.get(token_id, ""))
+
+        return "".join(chars)
 
 
 class GeorgianOCRDataset(Dataset):
@@ -87,8 +102,16 @@ class GeorgianOCRDataset(Dataset):
         self.aug_pipeline = A.Compose([
             A.Rotate(limit=(4, 4), border_mode=cv2.BORDER_CONSTANT, fill=(255, 255, 255), p=0.7),
             A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.5),
-            A.GaussianBlur(blur_limit=(3, 3), p=0.5),
-            A.GaussNoise(std_range=(0.1, 0.3), p=0.7),
+            A.OneOf([
+                A.GaussianBlur(blur_limit=(3, 3), p=1.0),
+                A.GaussNoise(p=1.0),
+                A.Sharpen(alpha=(0.2, 0.5), p=1.0),
+            ], p=0.6),
+            A.OneOf([
+                A.GridDistortion(p=1.0),
+                A.ElasticTransform(p=1.0),
+                A.Perspective(scale=(0.02, 0.05), p=1.0),
+            ], p=0.3),
         ])
 
     def __len__(self) -> int:
