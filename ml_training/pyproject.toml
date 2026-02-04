@@ -21,6 +21,7 @@ dependencies = [
     "matplotlib>=3.10.0",
     "albumentations>=2.0.8",
     "torchvision>=0.24.1",
+    "tensorboard"
 ]
 
 

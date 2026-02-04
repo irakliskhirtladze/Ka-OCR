@@ -4,16 +4,17 @@ import pandas as pd
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-from transformers import TrOCRProcessor
+from transformers import TrOCRProcessor, PreTrainedTokenizer
 import albumentations as A
 
 
-class GeorgianTokenizer:
+class GeorgianTokenizer(PreTrainedTokenizer):
     """
     Custom tokenizer for Georgian alphabet.
     It tokenizes characters instead of words since fine-tuned model is supposed to recognize a single word.
     """
     def __init__(self, max_length: int = 32):
+        super().__init__()
         # Special tokens
         self.pad_token = "<pad>"
         self.bos_token = "<s>"      # beginning of sequence

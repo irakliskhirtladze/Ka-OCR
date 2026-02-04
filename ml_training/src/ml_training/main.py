@@ -1,3 +1,4 @@
+from functools import partial
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
@@ -97,11 +98,12 @@ def main() -> None:
         report_to='tensorboard',
     )
 
+    metrics_with_tokenizer = partial(compute_metrics_seq2seq, tokenizer=tokenizer)
     seq2sec_trainer = Seq2SeqTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         args=seq2seq_training_args,
-        compute_metrics=compute_metrics_seq2seq,
+        compute_metrics=metrics_with_tokenizer,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
         data_collator=default_data_collator
