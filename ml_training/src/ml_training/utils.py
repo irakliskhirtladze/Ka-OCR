@@ -1,6 +1,11 @@
 import os
 import torch
 from torchvision.utils import save_image
+from PIL import Image
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+
+from ml_training.dataset import GeorgianTokenizer
+from ml_training.setup import Paths
 
 
 def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
@@ -34,3 +39,29 @@ def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
         save_image(img_tensor, os.path.join(debug_path, fname))
 
     print(f"--- Saved {n_images} debug images to: {debug_path} ---")
+
+
+def test_against_real_images(processor, paths: Paths, tokenizer: GeorgianTokenizer):
+    ka_model_path = paths.output_dir / "best_model.pt"  # The path to your .pt file
+    sample_imgs_dir = paths.dataset_dir
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+    model.resize_token_embeddings(len(tokenizer))
+    state_dict = torch.load(ka_model_path, map_location=device)
+    model.load_state_dict(state_dict)
+    model.to(device)
+    model.eval()
+
+    for img in sample_imgs_dir.glob("*.png"):
+        print(img)
+        image = Image.open(img).convert("RGB")
+        pixel_values = processor(image, return_tensors="pt").pixel_values.to(device)
+
+        # generate text
+        with torch.no_grad():
+            generated_ids = model.generate(pixel_values)
+            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+        print(f"File: {img.name} -> Recognized: {generated_text}")
+

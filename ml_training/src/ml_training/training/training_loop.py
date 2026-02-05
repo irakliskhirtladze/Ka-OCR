@@ -94,7 +94,7 @@ def train_model(
                     checkpoint_name = f"checkpoint_e{epoch}_b{batch_idx}.pt"
                     save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(), best_cer,
                                checkpoint_name, loader_generator, scheduler=scheduler)
-                    print(f"===== Saved Resume Checkpoint {checkpoint_name} =====")
+                    print(f"===== Saved Checkpoint {checkpoint_name} =====")
 
                     print(f"Validating at Batch {batch_idx}...")
                     current_cer = validate_model(model, test_loader, tokenizer, device)
@@ -133,7 +133,7 @@ def train_model(
         scheduler.step(current_cer)
 
         save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(),
-                   current_cer, f"checkpoint_e{epoch}_final.pt", loader_generator, scheduler=scheduler)
+                   current_cer, f"checkpoint_e{epoch}_b{batch_idx}.pt", loader_generator, scheduler=scheduler)
 
         if current_cer < best_cer:
             best_cer = current_cer
