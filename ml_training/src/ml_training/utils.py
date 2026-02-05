@@ -63,7 +63,7 @@ def test_against_real_images(paths: Paths, model, processor, tokenizer):
         # generate text
         with torch.no_grad():
             generated_ids = model.generate(pixel_values)
-            generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+            generated_text = tokenizer.decode(generated_ids[0])
 
         print(f"File: {img.name} -> Recognized: {generated_text}")
 
