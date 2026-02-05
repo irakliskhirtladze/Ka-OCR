@@ -43,7 +43,7 @@ def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
     print(f"--- Saved {n_images} debug images to: {debug_path} ---")
 
 
-def test_against_real_images(paths: Paths, model, processor):
+def test_against_real_images(paths: Paths, model, processor, tokenizer):
     print("Testing against real images...")
     ka_model_path = paths.drive_output_dir / "best_model.pt"  # The path to your .pt file
     sample_imgs_dir = Path("/content/drive/MyDrive/Colab Notebooks/trocr-ka/data/")
@@ -57,14 +57,13 @@ def test_against_real_images(paths: Paths, model, processor):
     model.eval()
 
     for img in sample_imgs_dir.glob("*.png"):
-        print(img)
         image = Image.open(img).convert("RGB")
         pixel_values = processor(image, return_tensors="pt").pixel_values.to(device)
 
         # generate text
         with torch.no_grad():
             generated_ids = model.generate(pixel_values)
-            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            generated_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
         print(f"File: {img.name} -> Recognized: {generated_text}")
 
