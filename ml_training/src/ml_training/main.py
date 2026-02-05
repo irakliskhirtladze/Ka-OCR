@@ -115,7 +115,7 @@ def main() -> None:
 
     # ================ INFERENCE ====================
     from ml_training.utils import test_against_real_images
-    test_against_real_images(paths, model, processor, tokenizer)
+    test_against_real_images(paths, model, processor)
 
 
 if __name__ == "__main__":

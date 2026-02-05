@@ -41,13 +41,12 @@ def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
     print(f"--- Saved {n_images} debug images to: {debug_path} ---")
 
 
-def test_against_real_images(paths: Paths, model, processor, tokenizer: GeorgianTokenizer):
+def test_against_real_images(paths: Paths, model, processor):
+    print("Testing against real images...")
     ka_model_path = paths.drive_output_dir / "best_model.pt"  # The path to your .pt file
     sample_imgs_dir = paths.dataset_dir
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
-    # model.resize_token_embeddings(len(tokenizer))
     state_dict = torch.load(ka_model_path, map_location=device)
     model.load_state_dict(state_dict)
     model.to(device)
