@@ -53,23 +53,23 @@ def main() -> None:
     # save_debug_samples(train_loader, tokenizer, str(paths.drive_output_dir / "debug_augs"))
 
     # set up device and run training loop
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    train_model(
-        paths,
-        model,
-        train_loader,
-        test_loader,
-        loader_generator,
-        device,
-        tokenizer,
-        epochs=3,
-        save_every=1000,
-        max_grad_norm=1.0,
-        learning_rate=1e-6,
-        resume_latest=True
-    )
-    save_final_model(paths, model, processor, tokenizer)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
+    # train_model(
+    #     paths,
+    #     model,
+    #     train_loader,
+    #     test_loader,
+    #     loader_generator,
+    #     device,
+    #     tokenizer,
+    #     epochs=3,
+    #     save_every=1000,
+    #     max_grad_norm=1.0,
+    #     learning_rate=1e-6,
+    #     resume_latest=True
+    # )
+    # save_final_model(paths, model, processor, tokenizer)
 
     # # ============= seq2seqtrainer version =============
     # seq2seq_training_args = Seq2SeqTrainingArguments(
@@ -112,6 +112,10 @@ def main() -> None:
     # print("Starting Seq2Seq Training...")
     # result = seq2sec_trainer.train()
     # seq2sec_trainer.save_model(str(paths.output_dir / "best_model_final"))
+
+    # ================ INFERENCE ====================
+    from utils import test_against_real_images
+    test_against_real_images(paths, processor, tokenizer)
 
 
 if __name__ == "__main__":

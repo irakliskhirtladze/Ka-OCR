@@ -41,7 +41,7 @@ def save_debug_samples(dataloader, tokenizer, output_dir, n_images=50):
     print(f"--- Saved {n_images} debug images to: {debug_path} ---")
 
 
-def test_against_real_images(processor, paths: Paths, tokenizer: GeorgianTokenizer):
+def test_against_real_images(paths: Paths, processor, tokenizer: GeorgianTokenizer):
     ka_model_path = paths.output_dir / "best_model.pt"  # The path to your .pt file
     sample_imgs_dir = paths.dataset_dir
     device = "cuda" if torch.cuda.is_available() else "cpu"
