@@ -53,6 +53,10 @@ def test_against_real_images(paths: Paths, model, processor, tokenizer):
 
     state_dict = torch.load(ka_model_path, map_location=device)
     model.load_state_dict(state_dict)
+    model.config.decoder_start_token_id = tokenizer.bos_token_id
+    model.config.bos_token_id = tokenizer.bos_token_id
+    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.pad_token_id
     model.to(device)
     model.eval()
 
@@ -62,8 +66,12 @@ def test_against_real_images(paths: Paths, model, processor, tokenizer):
 
         # generate text
         with torch.no_grad():
-            generated_ids = model.generate(pixel_values)
-            generated_text = tokenizer.decode(generated_ids[0])
+            generated_ids = model.generate(pixel_values,
+                                           decoder_start_token_id=model.config.decoder_start_token_id,
+                                           max_length=32
+                                           )
+            generated_text = tokenizer.decode(generated_ids[0].tolist())
 
+        print(f"File: {img.name} -> Raw IDs: {generated_ids[0].tolist()}")  # Debug line
         print(f"File: {img.name} -> Recognized: {generated_text}")
 
