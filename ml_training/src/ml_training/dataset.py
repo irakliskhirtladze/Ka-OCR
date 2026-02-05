@@ -91,7 +91,6 @@ class GeorgianTokenizer:
     def decode(self, token_ids: list[int]) -> str:
         """Convert token IDs back to text."""
         chars = []
-        print(f"DEBUG IDs: {token_ids}")
         for token_id in token_ids:
             if token_id in (self.pad_token_id, self.bos_token_id, self.eos_token_id):
                 continue
