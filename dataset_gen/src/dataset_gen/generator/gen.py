@@ -1,7 +1,6 @@
 import json
 import re
 import time
-from datetime import datetime
 
 from trdg.generators import GeneratorFromStrings
 from dataset_gen.utils import BASE_DIR
@@ -9,10 +8,7 @@ from pathlib import Path
 import csv
 import random
 import os
-import zipfile
 from concurrent.futures import ProcessPoolExecutor
-from huggingface_hub import HfApi
-from dotenv import load_dotenv
 
 
 def load_dictionary(dict_path: Path = None) -> tuple[list, list]:
@@ -152,14 +148,6 @@ def _generate_for_font(args: tuple) -> list[dict]:
     return metadata
 
 
-def write_version(file_path: Path):
-    """Writes version timestamp to file (UTC)."""
-    current_timestamp = datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S")
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(current_timestamp)
-    print(f"Version {current_timestamp} (UTC) saved to {file_path}")
-
-
 def generate_imgs(num_images_per_font: int):
     """Generate synthetic images for all fonts.
 
@@ -167,9 +155,9 @@ def generate_imgs(num_images_per_font: int):
         num_images_per_font: Number of images to generate per font
         parallel_threshold: Use parallel processing if num_images_per_font >= this value
     """
-    ka_font_dir = BASE_DIR / "generator" / "fonts" / "ka"
+    ka_font_dir = BASE_DIR / "src" / "dataset_gen" / "generator" / "fonts" / "ka"
     output_dir = BASE_DIR / "data" / "raw"
-    dict_path = BASE_DIR / "generator" / "dictionaries" / "ka_dictionary.json"
+    dict_path = BASE_DIR / "src" / "dataset_gen" / "dictionaries" / "ka_dictionary.json"
 
     # Get all font files (ttf and otf)
     fonts = [str(f) for f in ka_font_dir.glob("*") if f.suffix.lower() in ['.ttf', '.otf']]
@@ -247,99 +235,3 @@ def generate_imgs(num_images_per_font: int):
 
     print(f"\n✓ Finished! {len(metadata)} images saved to {output_dir}")
     print(f"✓ Labels saved to {csv_path}")
-
-    # Write version file
-    write_version(BASE_DIR / "data" / "version.txt")
-
-
-def zip_dataset():
-    """Zip the dataset preserving font subdirectory structure."""
-    data_dir = BASE_DIR / "data"
-    raw_dir = data_dir / "raw"
-    metadata_file = data_dir / "metadata.csv"
-    version_file = data_dir / "version.txt"
-    zip_path = data_dir / "ka-ocr.zip"
-
-    # Verify data exists
-    if not raw_dir.exists() or not metadata_file.exists():
-        print("Error: Dataset not found. Run generate_imgs() first.")
-        return
-
-    # Find all images in subdirectories
-    image_files = list(raw_dir.glob("**/*.png"))
-    if not image_files:
-        print("Error: No images found in data/raw/")
-        return
-
-    print(f"\nCreating zip file with {len(image_files)} images...")
-
-    # Create zip file preserving subdirectory structure
-    t1 = time.perf_counter()
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        num_images = len(image_files)
-        for i, img_file in enumerate(image_files):
-            print(f"\radding image {i+1}/{num_images}...", end="", flush=True)
-            arcname = img_file.relative_to(raw_dir)
-            zipf.write(img_file, arcname=arcname)
-
-        # Add metadata.csv to zip root
-        zipf.write(metadata_file, arcname="metadata.csv")
-
-    zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
-    t2 = time.perf_counter()
-    print(f"\nCreated {zip_path.name} ({zip_size_mb:.2f} MB)")
-    print(f"Zipped in {(t2 - t1):.2f} seconds")
-
-
-def dataset_to_hf():
-    """Upload existing zip file to Hugging Face Hub."""
-    load_dotenv()
-
-    # Check for required environment variables
-    hf_token = os.getenv("HF_TOKEN")
-    hf_dataset_repo = os.getenv("HF_DATASET_REPO")
-
-    if not hf_token:
-        print("Error: HF_TOKEN not found in .env file")
-        return
-
-    if not hf_dataset_repo:
-        print("Error: HF_DATASET_REPO not found in .env file")
-        return
-
-    zip_path = BASE_DIR / "data" / "ka-ocr.zip"
-
-    if not zip_path.exists():
-        print(f"Error: Zip file not found at {zip_path}")
-        return
-    
-    version_path = BASE_DIR / "data" / "version.txt"
-    if not version_path.exists():
-        print(f"Warning: version.txt not found at {version_path}")
-
-    # Push to Hugging Face
-    print(f"\nPushing to Hugging Face: {hf_dataset_repo}")
-    try:
-        api = HfApi()
-        api.upload_file(
-            path_or_fileobj=str(zip_path),
-            path_in_repo="ka-ocr.zip",
-            repo_id=hf_dataset_repo,
-            repo_type="dataset",
-            token=hf_token
-        )
-        
-        # Upload version.txt separately for easy version checking
-        if version_path.exists():
-            api.upload_file(
-                path_or_fileobj=str(version_path),
-                path_in_repo="version.txt",
-                repo_id=hf_dataset_repo,
-                repo_type="dataset",
-                token=hf_token
-            )
-        
-        print(f"Successfully uploaded to https://huggingface.co/datasets/{hf_dataset_repo}")
-    except Exception as e:
-        print(f"Failed to upload to Hugging Face: {e}")
-

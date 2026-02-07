@@ -1,14 +1,12 @@
 import json
+import shutil
 from pathlib import Path
 
 import cv2
 import pandas as pd
 from urllib.parse import unquote
 
-from PIL import Image
-
 from augraphy.base.augmentationpipeline import AugraphyPipeline
-from augraphy.augmentations.dithering import Dithering
 from augraphy.augmentations.inkbleed import InkBleed
 from augraphy.augmentations.colorpaper import ColorPaper
 from augraphy.augmentations.brightness import Brightness
@@ -37,6 +35,10 @@ def labels_json_to_df(json_path: Path) -> pd.DataFrame:
     df = df[["image", "manual_label"]]
     df.rename(columns={"image": "file_name", "manual_label": "text"}, inplace=True)
     df["file_name"] = df["file_name"].apply(clean_filename)
+
+    # check actual file names keep in df only entries of existing files
+    imgs = {f.name for f in (BASE_DIR / "data/real").glob("*.png")}
+    df = df[df["file_name"].isin(imgs)].copy()
     return df
 
 
@@ -44,15 +46,20 @@ def augment_real_data(real_imgs_dir: Path, labels_df: pd.DataFrame, num_copies: 
     """Takes real images, creates augmented copies of them, creates corresponding labels in df and saves files"""
     real_imgs = real_imgs_dir.glob("*.png")
 
-    ink_phase = [Dithering(p=0.1), InkBleed(intensity_range=(0.1, 0.3), kernel_size=(3, 3), p=0.2)]
-    paper_phase = [ColorPaper(hue_range=(0, 255), saturation_range=(10, 30), p=0.3)]
-    post_phase = [Brightness(brightness_range=(0.8, 1.1), p=0.5)]
-    pipeline = AugraphyPipeline(ink_phase=ink_phase, paper_phase=paper_phase, post_phase=post_phase)
+    ink_phase = [InkBleed(intensity_range=(0.4, 0.7), kernel_size=(3, 3), p=1)]
+    paper_phase = [ColorPaper(hue_range=(0, 255), saturation_range=(0, 30), p=0.8)]
+    post_phase = [Brightness(brightness_range=(0.8, 1.1), p=0.8)]
+    pipeline = AugraphyPipeline(
+        ink_phase=ink_phase,
+        paper_phase=paper_phase,
+        post_phase=post_phase
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     augmented_labels_list = []
     for file_path in real_imgs:
+        print(f"processing {file_path.name}")
         label_row = labels_df[labels_df["file_name"] == file_path.name]
         label_text = label_row.iloc[0]["text"]
         image = cv2.imread(str(file_path))
@@ -78,10 +85,23 @@ def augment_real_data(real_imgs_dir: Path, labels_df: pd.DataFrame, num_copies: 
     print(f"Originals: {len(labels_df)}")
     print(f"Augmented: {len(augmented_labels_df)}")
     print(f"Total:     {len(final_df)}")
-    final_df["file_name"] = final_df["file_name"].apply(lambda x: f"real/{x}")
-    final_df.to_csv(BASE_DIR / "data" / "augmented_real.csv", index=False)
+    final_df["file_name"] = final_df["file_name"].apply(lambda x: f"real_augmented/{x}")
+    final_df.to_csv(BASE_DIR / "data" / "real_augmented.csv", index=False)
+
+
+def copy_reals_to_aug() -> None:
+    """Copy and paste real images to augmented images dir"""
+    real_imgs_dir = BASE_DIR / "data" / "real"
+    augmented_imgs_dir = BASE_DIR / "data" / "real_augmented"
+
+    real_imgs = real_imgs_dir.glob("*.png")
+    for img_path in real_imgs:
+        shutil.copy2(img_path, augmented_imgs_dir / img_path.name)
+
+    print(f"Successfully copied images to {augmented_imgs_dir}")
 
 
 if __name__ == "__main__":
     real_labels_df = labels_json_to_df(BASE_DIR / "data/real.json")
     augment_real_data(BASE_DIR / "data/real", real_labels_df, 20, BASE_DIR / "data/real_augmented")
+    copy_reals_to_aug()
