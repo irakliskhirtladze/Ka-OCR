@@ -19,7 +19,7 @@ def main() -> None:
     df = pd.read_csv(paths.dataset_dir / "metadata.csv")
     train_df, test_df = train_test_split(
         df,
-        test_size=0.1,
+        test_size=0.05,
         random_state=42,
         shuffle=True
     )
@@ -30,8 +30,8 @@ def main() -> None:
 
     # Load model and resize token embeddings
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
-    for param in model.encoder.parameters():
-        param.requires_grad = False  # Freeze entire encoder part of the model
+    # for param in model.encoder.parameters():
+    #     param.requires_grad = False  # Freeze entire encoder part of the model
     model.decoder.resize_token_embeddings(len(tokenizer))
 
     # Configure special tokens
@@ -67,10 +67,10 @@ def main() -> None:
         loader_generator,
         device,
         tokenizer,
-        epochs=3,
+        epochs=20,
         save_every=1000,
         max_grad_norm=1.0,
-        learning_rate=1e-6,
+        learning_rate=1e-5,
         resume_latest=True
     )
     save_final_model(paths, model, processor, tokenizer)

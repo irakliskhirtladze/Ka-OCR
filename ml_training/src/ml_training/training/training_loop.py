@@ -21,7 +21,7 @@ def train_model(
         loader_generator: torch.Generator,
         device: torch.device,
         tokenizer: GeorgianTokenizer,
-        epochs: int = 3,
+        epochs: int = 10,
         save_every: int = 1000,
         max_grad_norm: float = 1.0,
         learning_rate: float = 1e-5,
@@ -30,9 +30,16 @@ def train_model(
     """Main pytorch training loop to fine-tune TrOCR pretrained model."""
 
     # Always create fresh optimizer and scaler to avoid OOM from stale state
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    encoder_params = [p for p in model.encoder.parameters() if p.requires_grad]
+    decoder_params = list(model.decoder.parameters())
+
+    optimizer = AdamW([
+        {"params": encoder_params, "lr": 1e-5},
+        {"params": decoder_params, "lr": 5e-5},
+    ], weight_decay=0.01)
+    # optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scaler = GradScaler('cuda', enabled=(device.type == "cuda"))
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2, min_lr=1e-6)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6)
 
     # Initialize defaults
     start_epoch = 0
@@ -104,7 +111,6 @@ def train_model(
                     if current_cer < best_cer:
                         best_cer = current_cer
                         print(f"New Best Model found! (CER: {current_cer:.4f}) Saving best_model.pt...")
-
                         torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
                         if check_env() == "colab":
                             shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
@@ -137,6 +143,7 @@ def train_model(
 
         if current_cer < best_cer:
             best_cer = current_cer
+            print(f"New Best Model found! (CER: {current_cer:.4f}) Saving best_model.pt...")
             torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
             if check_env() == "colab":
                 shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")

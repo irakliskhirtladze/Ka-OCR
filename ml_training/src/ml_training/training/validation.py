@@ -21,7 +21,7 @@ def validate_model(
     predictions: list[str] = []
     references: list[str] = []
 
-    with torch.no_grad():
+    with torch.inference_mode():
         with torch.amp.autocast('cuda', enabled=(device.type == "cuda")):
             for i, batch in enumerate(val_loader):
                 if max_batches and i >= max_batches:  # Stop after enough samples
