@@ -20,12 +20,18 @@ class GeorgianTokenizer:
         self.eos_token = "</s>"     # end of sequence
         self.unk_token = "<unk>"    # unknown character
 
-        # Georgian alphabet (33 letters)
+        # Georgian alphabet (33 letters) and other chars
         self.georgian_chars = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
+        self.digits = "0123456789"
+        self.roman = "IVXLCDM"
+        self.punctuation = ".,-!?;:\"'()[]{}/=%+* &$#@~"
 
         # Build vocabulary: special tokens + Georgian characters
         self.vocab = [self.pad_token, self.bos_token, self.eos_token, self.unk_token]
         self.vocab.extend(list(self.georgian_chars))
+        self.vocab.extend(list(self.digits))
+        self.vocab.extend(list(self.roman))
+        self.vocab.extend(list(self.punctuation))
 
         # Create mappings
         self.char_to_id = {char: idx for idx, char in enumerate(self.vocab)}
@@ -64,6 +70,15 @@ class GeorgianTokenizer:
 
         return ids
 
+    def decode(self, token_ids: list[int]) -> str:
+        """Convert token IDs back to text."""
+        chars = []
+        for token_id in token_ids:
+            if token_id in (self.pad_token_id, self.bos_token_id, self.eos_token_id):
+                continue
+            chars.append(self.id_to_char.get(token_id, ""))
+        return "".join(chars)
+
     # def batch_decode(self, sequences: np.ndarray, skip_special_tokens: bool = True) -> list[str]:
     #     """Decodes a batch of token IDs (list of lists or torch Tensors)."""
     #     return [self.decode(seq, skip_special_tokens=skip_special_tokens) for seq in sequences]
@@ -88,14 +103,7 @@ class GeorgianTokenizer:
     #
     #     return "".join(chars)
 
-    def decode(self, token_ids: list[int]) -> str:
-        """Convert token IDs back to text."""
-        chars = []
-        for token_id in token_ids:
-            if token_id in (self.pad_token_id, self.bos_token_id, self.eos_token_id):
-                continue
-            chars.append(self.id_to_char.get(token_id, ""))
-        return "".join(chars)
+
 
 
 class GeorgianOCRDataset(Dataset):

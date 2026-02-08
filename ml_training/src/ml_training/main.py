@@ -32,7 +32,7 @@ def main() -> None:
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
     for param in model.encoder.parameters():
         param.requires_grad = False  # Freeze entire encoder part of the model
-    model.decoder.resize_token_embeddings(len(tokenizer))  # Resize to 37
+    model.decoder.resize_token_embeddings(len(tokenizer))
 
     # Configure special tokens
     model.config.decoder_start_token_id = tokenizer.bos_token_id
@@ -49,27 +49,31 @@ def main() -> None:
                               num_workers=2 if check_env() == "colab" else 6)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
+    # # Quick check of online augmented samples
     # from ml_training.utils import save_debug_samples
-    # save_debug_samples(train_loader, tokenizer, str(paths.drive_output_dir / "debug_augs"))
+    # if check_env() == "colab":
+    #     save_debug_samples(train_loader, tokenizer, str(paths.drive_output_dir / "debug_augs"))
+    # elif check_env() == "local":
+    #     save_debug_samples(train_loader, tokenizer, str(paths.output_dir / "debug_augs"))
 
     # set up device and run training loop
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model.to(device)
-    # train_model(
-    #     paths,
-    #     model,
-    #     train_loader,
-    #     test_loader,
-    #     loader_generator,
-    #     device,
-    #     tokenizer,
-    #     epochs=3,
-    #     save_every=1000,
-    #     max_grad_norm=1.0,
-    #     learning_rate=1e-6,
-    #     resume_latest=True
-    # )
-    # save_final_model(paths, model, processor, tokenizer)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    train_model(
+        paths,
+        model,
+        train_loader,
+        test_loader,
+        loader_generator,
+        device,
+        tokenizer,
+        epochs=3,
+        save_every=1000,
+        max_grad_norm=1.0,
+        learning_rate=1e-6,
+        resume_latest=True
+    )
+    save_final_model(paths, model, processor, tokenizer)
 
     # # ============= seq2seqtrainer version =============
     # seq2seq_training_args = Seq2SeqTrainingArguments(
@@ -114,8 +118,8 @@ def main() -> None:
     # seq2sec_trainer.save_model(str(paths.output_dir / "best_model_final"))
 
     # ================ INFERENCE ====================
-    from ml_training.utils import test_against_real_images
-    test_against_real_images(paths, model, processor, tokenizer)
+    # from ml_training.utils import test_against_real_images
+    # test_against_real_images(paths, model, processor, tokenizer)
 
 
 if __name__ == "__main__":

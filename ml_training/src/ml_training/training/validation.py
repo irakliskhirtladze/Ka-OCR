@@ -34,7 +34,7 @@ def validate_model(
                 outputs = model.generate(
                     pixel_values,
                     num_beams=num_beams,
-                    max_length=64,
+                    max_length=32,
                 )
 
                 # Convert tokens back to strings
