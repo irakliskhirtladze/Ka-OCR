@@ -2,37 +2,31 @@
 This is a monorepo of OCR project that is able to detect Georgian (Ka)
 texts on images/PDFs.
 
-The project consists of few parts or subprojects:
-* Dataset generation - "dataset_gen"
-* Source code for ML model fine-tuning - "ml_training"
-* FastAPI Backend - "api"
+The project consists of few parts/subprojects:
+## dataset_gen
+Handles synthetic data generation, adding real image data and it's augmentation,
+unified metadate.csv generation, zipping and uploading
+to Hugging Face automatically.
 
-Due to different Python version requirements, dataset_gen is better
-to be opened and configured as separate project if working on it.
-The other Two are share same environment and therefore can be opened
-in IDE from project root (Ka-OCR).
+## ml_training
+Runs model training script and manages checkpoints, model evaluation and best model saving.
+
+## api
+FastAPI based user-facing api for model serving.
+
 
 # Setup
-Using uv is recommended for quick and easy setup.
-from project root
-```bash
-uv venv
-```
+Each subproject is independently managed with UV.
+Go to the subproject root you want to run/edit and run command to 
+automatically setup venv and install deps.
 
-Then depending on which subproject you work on:
-### For "ml_training" or "api"
-go to the subproject you want to work on and sync dependencies.
-for example:
+For example, in case of ml_training subproject:
 ```bash
-cd api
-```
-and
-```bash
+cd ml_training
 uv sync
 ```
-
-### For "dataset_gen"
-Open dataset_gen folder as independent project in your IDE, then:
+Then run respective entry point:
 ```bash
-uv sync
+uv run main
 ```
+See more detailed information about setup and usage in each subproject's readme file.
