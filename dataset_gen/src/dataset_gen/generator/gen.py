@@ -96,14 +96,14 @@ def _generate_for_font(args: tuple) -> list[dict]:
         source_type = random.random()
         
         if no_number_support:
-            if source_type < 0.9:
+            if source_type < 0.95:
                 text = get_random_word(word_list, weights, exclude_special_chars=True)
             else:
                 text = get_random_sequence()
         else:
-            if source_type < 0.9:
+            if source_type < 0.92:
                 text = get_random_word(word_list, weights)
-            elif source_type < 0.97:
+            elif source_type < 0.98:
                 text = get_random_sequence()
             else:
                 text = get_random_number()
@@ -117,17 +117,14 @@ def _generate_for_font(args: tuple) -> list[dict]:
             fonts=[font_path],
             language="ka",
             size=random.randint(32, 96),
-            skewing_angle=random.randint(0, 2),
-            random_skew=True,
-            blur=random.randint(0, 1),
-            random_blur=True,
-            distorsion_type=2, #random.randint(0, 3),  # 0=none, 1=sine, 2=cosine, 3=random
-            distorsion_orientation=random.randint(0, 2),
-            background_type=random.randint(0, 2),  # 0=gaussian, 1=plain white, 2=quasicrystal, 3=image
-            text_color="#000000,#1a1a1a,#333333,#2b1a1a,#1a0f0f,#3d2b2b,#4a0000,#2d1f1f",
-            margins=(random.randint(0, 10), random.randint(0, 10), random.randint(0, 10),
-                     random.randint(0, 10)),
-            fit=random.choice([True, False]),
+            # skewing_angle=random.randint(0, 1),
+            # random_skew=True,
+            # blur=random.randint(0, 1),
+            # random_blur=True,
+            # distorsion_type=0,  # 0=none, 1=sine, 2=cosine, 3=random
+            # distorsion_orientation=random.randint(0, 2),
+            # background_type=1,  # 0=gaussian, 1=plain white, 2=quasicrystal, 3=image
+            # text_color="#000000",
         )
 
         img = next(generator)
@@ -193,36 +190,13 @@ def generate_imgs(num_images_per_font: int):
         for font_path in fonts
     ]
 
-    # Ask user model of image generation
-    while True:
-        user_input = input("\nDo you want to do parallel image generation? (Y/N): ")
-        if user_input.lower() == "y":
-            use_parallel = True
-            break
-        elif user_input.lower() == "n":
-            use_parallel = False
-            break
-        else:
-            print("Please enter either 'Y' or 'N'.")
-
     # Run image generation either with multiple CPU cores, or sequentially
     t1 = time.perf_counter()
-    if use_parallel:
-        num_workers = min(os.cpu_count() or 1, len(fonts))
-        print(f"\nUsing parallel processing with {num_workers} workers...\n")
-
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            results = list(executor.map(_generate_for_font, font_args))
-
-        metadata = [item for result in results for item in result]
-    else:
-        print("\nUsing sequential processing...\n")
-        metadata = []
-        for font_idx, args in enumerate(font_args):
-            font_name = Path(args[0]).stem
-            print(f"[{font_idx+1}/{len(fonts)}] Processing font: {font_name}")
-            result = _generate_for_font(args)
-            metadata.extend(result)
+    num_workers = min(os.cpu_count() or 1, len(fonts))
+    print(f"\nUsing parallel processing with {num_workers} workers...\n")
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        results = list(executor.map(_generate_for_font, font_args))
+    metadata = [item for result in results for item in result]
     t2 = time.perf_counter()
     print(f"\nDone in {(t2 - t1)} seconds")
 
@@ -235,3 +209,8 @@ def generate_imgs(num_images_per_font: int):
 
     print(f"\n✓ Finished! {len(metadata)} images saved to {output_dir}")
     print(f"✓ Labels saved to {csv_path}")
+
+
+def augment_imgs() -> None:
+    """Augment images with Augraphy for realistic document like look."""
+    pass

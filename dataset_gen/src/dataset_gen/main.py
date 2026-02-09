@@ -49,8 +49,8 @@ def zip_dataset() -> None:
         print("Error: No images found in data/raw/")
         return
 
-    # Extend metadata csv file
-    extend_metadata_csv(metadata_file, real_aug_metadata_file)
+    # # Extend metadata csv file
+    # extend_metadata_csv(metadata_file, real_aug_metadata_file)
 
     # Create zip file preserving subdirectory structure
     print(f"\nCreating zip file with {len(image_files)} images...")
@@ -62,14 +62,14 @@ def zip_dataset() -> None:
             arcname = img_file.relative_to(raw_dir)
             zipf.write(img_file, arcname=arcname)
 
-        # add real augmented image folder to zip
-        aug_files = list(real_aug_dir.glob("*.png"))
-        num_aug = len(aug_files)
-        for i, aug_file in enumerate(aug_files):
-            print(f"\radding real or augmented image {i + 1}/{num_aug}...", end="", flush=True)
-            # This puts them inside a "real_augmented/" folder in the zip
-            arcname = Path("real_augmented") / aug_file.name
-            zipf.write(aug_file, arcname=arcname)
+        # # add real augmented image folder to zip
+        # aug_files = list(real_aug_dir.glob("*.png"))
+        # num_aug = len(aug_files)
+        # for i, aug_file in enumerate(aug_files):
+        #     print(f"\radding real or augmented image {i + 1}/{num_aug}...", end="", flush=True)
+        #     # This puts them inside a "real_augmented/" folder in the zip
+        #     arcname = Path("real_augmented") / aug_file.name
+        #     zipf.write(aug_file, arcname=arcname)
 
         # Add metadata.csv to zip root
         zipf.write(metadata_file, arcname="metadata.csv")
@@ -79,8 +79,8 @@ def zip_dataset() -> None:
     print(f"\nCreated {zip_path.name} ({zip_size_mb:.2f} MB)")
     print(f"Zipped in {(t2 - t1):.2f} seconds")
 
-    # Generate version file
-    write_version(data_dir / "version.txt")
+    # # Generate version file
+    # write_version(data_dir / "version.txt")
 
 
 def dataset_to_hf() -> None:
