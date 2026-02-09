@@ -47,31 +47,31 @@ def main() -> None:
                               num_workers=2 if check_env() == "colab" else 6)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    # # Quick check of online augmented samples
-    # from ml_training.utils import save_debug_samples
-    # if check_env() == "colab":
-    #     save_debug_samples(train_loader, tokenizer, str(paths.drive_output_dir / "debug_augs"))
-    # elif check_env() == "local":
-    #     save_debug_samples(train_loader, tokenizer, str(paths.output_dir / "debug_augs"))
+    # Quick check of online augmented samples
+    from ml_training.utils import save_debug_samples
+    if check_env() == "colab":
+        save_debug_samples(train_loader, tokenizer, str(paths.drive_output_dir / "debug_augs"), n_images=1000)
+    elif check_env() == "local":
+        save_debug_samples(train_loader, tokenizer, str(paths.output_dir / "debug_augs"), n_images=1000)
 
-    # set up device and run training loop
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    train_model(
-        paths,
-        model,
-        train_loader,
-        test_loader,
-        loader_generator,
-        device,
-        tokenizer,
-        epochs=20,
-        save_every=1000,
-        max_grad_norm=1.0,
-        learning_rate=1e-5,
-        resume_latest=True
-    )
-    save_final_model(paths, model, processor, tokenizer)
+    # # set up device and run training loop
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
+    # train_model(
+    #     paths,
+    #     model,
+    #     train_loader,
+    #     test_loader,
+    #     loader_generator,
+    #     device,
+    #     tokenizer,
+    #     epochs=20,
+    #     save_every=1000,
+    #     max_grad_norm=1.0,
+    #     learning_rate=1e-5,
+    #     resume_latest=True
+    # )
+    # save_final_model(paths, model, processor, tokenizer)
 
 
     # # ============= seq2seqtrainer version =============

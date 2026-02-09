@@ -47,6 +47,8 @@ def validate_model(
 
                 predictions.extend(pred_str)
                 references.extend(label_str)
+                print(predictions)
+                print(references)
 
     # Calculate Character Error Rate
     return cer_metric.compute(predictions=predictions, references=references)
