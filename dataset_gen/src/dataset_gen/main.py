@@ -8,6 +8,7 @@ import pandas as pd
 from huggingface_hub import HfApi
 from dotenv import load_dotenv
 
+from dataset_gen.generator.augmentation import augment_img, augment_images
 from dataset_gen.generator.gen import generate_imgs
 from dataset_gen.utils import BASE_DIR
 
@@ -33,9 +34,7 @@ def zip_dataset() -> None:
     """Zip the dataset preserving font subdirectory structure. Add real augmented images and write version file"""
     data_dir = BASE_DIR / "data"
     raw_dir = data_dir / "raw"
-    real_aug_dir = data_dir / "real_augmented"
     metadata_file = data_dir / "metadata.csv"
-    real_aug_metadata_file = data_dir / "real_augmented.csv"
     zip_path = data_dir / "ka-ocr.zip"
 
     # Verify synth data exists
@@ -49,9 +48,6 @@ def zip_dataset() -> None:
         print("Error: No images found in data/raw/")
         return
 
-    # # Extend metadata csv file
-    # extend_metadata_csv(metadata_file, real_aug_metadata_file)
-
     # Create zip file preserving subdirectory structure
     print(f"\nCreating zip file with {len(image_files)} images...")
     t1 = time.perf_counter()
@@ -62,15 +58,6 @@ def zip_dataset() -> None:
             arcname = img_file.relative_to(raw_dir)
             zipf.write(img_file, arcname=arcname)
 
-        # # add real augmented image folder to zip
-        # aug_files = list(real_aug_dir.glob("*.png"))
-        # num_aug = len(aug_files)
-        # for i, aug_file in enumerate(aug_files):
-        #     print(f"\radding real or augmented image {i + 1}/{num_aug}...", end="", flush=True)
-        #     # This puts them inside a "real_augmented/" folder in the zip
-        #     arcname = Path("real_augmented") / aug_file.name
-        #     zipf.write(aug_file, arcname=arcname)
-
         # Add metadata.csv to zip root
         zipf.write(metadata_file, arcname="metadata.csv")
 
@@ -79,8 +66,8 @@ def zip_dataset() -> None:
     print(f"\nCreated {zip_path.name} ({zip_size_mb:.2f} MB)")
     print(f"Zipped in {(t2 - t1):.2f} seconds")
 
-    # # Generate version file
-    # write_version(data_dir / "version.txt")
+    # Generate version file
+    write_version(data_dir / "version.txt")
 
 
 def dataset_to_hf() -> None:
@@ -154,6 +141,9 @@ def main() -> None:
             break
         else:
             print("Please enter a valid input.")
+
+    # Image augmentation
+    augment_images()
 
     # Zipping the dataset
     while True:

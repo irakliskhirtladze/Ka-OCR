@@ -144,7 +144,7 @@ class GeorgianOCRDataset(Dataset):
         img_path = f"{self.dataset_dir}/{self.df.iloc[idx]['file_name']}"
         text = self.df.iloc[idx]['text']  # the text written on the image file
 
-        # Open and process image
+        # Open and process image0
         img = Image.open(img_path).convert("RGB")
         w, h = img.size
         target_size = 384
@@ -161,7 +161,7 @@ class GeorgianOCRDataset(Dataset):
 
         # augment
         if self.augment:
-            img_np = np.array(new_img)
+            img_np = np.array(img_path)
             augmented = self.aug_pipeline(image=img_np)["image"]
             new_img = Image.fromarray(augmented)
 

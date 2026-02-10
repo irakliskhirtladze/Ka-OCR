@@ -111,23 +111,35 @@ def _generate_for_font(args: tuple) -> list[dict]:
         strings.append(text)
     
     # Generate images one string at a time
+    max_retries = 20
     for idx, text in enumerate(strings):
-        generator = GeneratorFromStrings(
-            strings=[text],
-            fonts=[font_path],
-            language="ka",
-            size=random.randint(32, 96),
-            # skewing_angle=random.randint(0, 1),
-            # random_skew=True,
-            # blur=random.randint(0, 1),
-            # random_blur=True,
-            # distorsion_type=0,  # 0=none, 1=sine, 2=cosine, 3=random
-            # distorsion_orientation=random.randint(0, 2),
-            # background_type=1,  # 0=gaussian, 1=plain white, 2=quasicrystal, 3=image
-            # text_color="#000000",
-        )
+        img = None
 
-        img = next(generator)
+        for attempt in range(max_retries):
+            generator = GeneratorFromStrings(
+                strings=[text],
+                fonts=[font_path],
+                language="ka",
+                size=random.randint(32, 96),
+                text_color="#000000,#282828",
+                skewing_angle=random.randint(0, 1),
+                random_skew=True,
+                # blur=random.randint(0, 1),
+                # random_blur=True,
+                # distorsion_type=0,  # 0=none, 1=sine, 2=cosine, 3=random
+                # distorsion_orientation=random.randint(0, 2),
+                # background_type=1,  # 0=gaussian, 1=plain white, 2=quasicrystal, 3=image
+            )
+
+            img = next(generator)
+
+            if img is None:
+                continue
+
+            w, h = img.size
+            if w >= 32 and h >= 32:
+                break  # valid image
+            img = None
 
         if img is None:
             continue
@@ -209,8 +221,3 @@ def generate_imgs(num_images_per_font: int):
 
     print(f"\n✓ Finished! {len(metadata)} images saved to {output_dir}")
     print(f"✓ Labels saved to {csv_path}")
-
-
-def augment_imgs() -> None:
-    """Augment images with Augraphy for realistic document like look."""
-    pass
