@@ -7,7 +7,6 @@ import evaluate
 from ml_training.dataset import GeorgianTokenizer, GeorgianOCRDataset
 from ml_training.setup import Paths
 
-
 cer_metric = evaluate.load("cer")
 
 
@@ -55,7 +54,7 @@ def compute_metrics_seq2seq(pred: EvalPrediction, tokenizer: GeorgianTokenizer) 
 
 
 def init_seq2seq_trainer(tokenizer: GeorgianTokenizer, model: torch.nn.Module, seq2seq_args: Seq2SeqTrainingArguments,
-                        train_dataset: GeorgianOCRDataset, test_dataset: GeorgianOCRDataset) -> Seq2SeqTrainer:
+                         train_dataset: GeorgianOCRDataset, test_dataset: GeorgianOCRDataset) -> Seq2SeqTrainer:
     metrics_with_tokenizer = partial(compute_metrics_seq2seq, tokenizer=tokenizer)
     return Seq2SeqTrainer(
         model=model,
@@ -66,4 +65,3 @@ def init_seq2seq_trainer(tokenizer: GeorgianTokenizer, model: torch.nn.Module, s
         eval_dataset=test_dataset,
         data_collator=default_data_collator
     )
-
