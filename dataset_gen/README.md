@@ -74,5 +74,5 @@ data/
 │   └── ...
 ├── metadata.csv                # Image labels (gitignored)
 └── ka-ocr.zip                  # Zipped dataset for HF (gitignored)
-└── ka-ocr.zip                  # version file (gitignored)
+└── version.txt                 # version file (gitignored)
 ```
