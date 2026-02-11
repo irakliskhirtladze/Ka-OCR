@@ -51,6 +51,8 @@ def validate_model(
                 predictions.extend(pred_str)
                 references.extend(label_str)
 
+            print("eos_token_id:", tokenizer.eos_token_id)
+            print("first output ids:", outputs[0].tolist())
             print(predictions[:5])
             print(references[:5])
 

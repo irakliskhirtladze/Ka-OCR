@@ -34,8 +34,8 @@ def train_model(
     decoder_params = list(model.decoder.parameters())
 
     optimizer = AdamW([
-        {"params": encoder_params, "lr": 1e-5},
-        {"params": decoder_params, "lr": 5e-5},
+        {"params": encoder_params, "lr": learning_rate},
+        {"params": decoder_params, "lr": learning_rate},
     ], weight_decay=0.01)
     # optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scaler = GradScaler('cuda', enabled=(device.type == "cuda"))

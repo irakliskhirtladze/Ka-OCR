@@ -94,26 +94,6 @@ class GeorgianTokenizer:
     #     """Decodes a batch of token IDs (list of lists or torch Tensors)."""
     #     return [self.decode(seq, skip_special_tokens=skip_special_tokens) for seq in sequences]
 
-    # def decode(self, token_ids: list[int], skip_special_tokens: bool = True) -> str:
-    #     """Convert token IDs back to text, stopping at EOS."""
-    #     # Convert torch tensor to list if necessary
-    #     if hasattr(token_ids, "tolist"):
-    #         token_ids = token_ids.tolist()
-    #
-    #     chars = []
-    #     for token_id in token_ids:
-    #         # Stop decoding if we hit the EOS token
-    #         if token_id == self.eos_token_id and skip_special_tokens:
-    #             break
-    #
-    #         # Skip BOS and PAD if requested
-    #         if skip_special_tokens and token_id in (self.pad_token_id, self.bos_token_id):
-    #             continue
-    #
-    #         chars.append(self.id_to_char.get(token_id, ""))
-    #
-    #     return "".join(chars)
-
 
 class GeorgianOCRDataset(Dataset):
     def __init__(self, df: pd.DataFrame, dataset_dir: str, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer,
