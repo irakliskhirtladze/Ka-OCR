@@ -35,6 +35,9 @@ def validate_model(
                     pixel_values,
                     num_beams=num_beams,
                     max_length=32,
+                    decoder_start_token_id=model.config.decoder_start_token_id,
+                    pad_token_id=model.config.pad_token_id,
+                    eos_token_id=model.config.eos_token_id,
                 )
 
                 # Convert tokens back to strings

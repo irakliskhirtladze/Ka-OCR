@@ -27,7 +27,7 @@ class GeorgianTokenizer:
         self.punctuation = ".,-!?;:\"'()[]{}/=%+* &$#@~"
 
         # Build vocabulary: special tokens + Georgian characters
-        self.vocab = [self.pad_token, self.bos_token, self.eos_token, self.unk_token]
+        self.vocab = [self.bos_token, self.pad_token, self.eos_token, self.unk_token]
         self.vocab.extend(list(self.georgian_chars))
         self.vocab.extend(list(self.digits))
         self.vocab.extend(list(self.roman))
@@ -38,8 +38,8 @@ class GeorgianTokenizer:
         self.id_to_char = {idx: char for idx, char in enumerate(self.vocab)}
 
         # Token IDs for special tokens
-        self.pad_token_id = 0
-        self.bos_token_id = 1
+        self.bos_token_id = 0
+        self.pad_token_id = 1
         self.eos_token_id = 2
         self.unk_token_id = 3
 
