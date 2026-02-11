@@ -89,12 +89,12 @@ def _generate_for_font(args: tuple) -> list[dict]:
     font_path, num_images, word_list, weights, output_dir, no_number_support = args
     font_name = Path(font_path).stem
     metadata = []
-    
+
     # Generate text strings for this font
     strings = []
     for _ in range(num_images):
         source_type = random.random()
-        
+
         if no_number_support:
             if source_type < 0.95:
                 text = get_random_word(word_list, weights, exclude_special_chars=True)
@@ -107,9 +107,9 @@ def _generate_for_font(args: tuple) -> list[dict]:
                 text = get_random_sequence()
             else:
                 text = get_random_number()
-        
+
         strings.append(text)
-    
+
     # Generate images one string at a time
     max_retries = 20
     for idx, text in enumerate(strings):
@@ -117,18 +117,26 @@ def _generate_for_font(args: tuple) -> list[dict]:
 
         for attempt in range(max_retries):
             generator = GeneratorFromStrings(
-                strings=[text],
-                fonts=[font_path],
-                language="ka",
-                size=random.randint(32, 96),
-                text_color="#000000,#282828",
-                skewing_angle=random.randint(0, 1),
-                random_skew=True,
-                # blur=random.randint(0, 1),
-                # random_blur=True,
-                # distorsion_type=0,  # 0=none, 1=sine, 2=cosine, 3=random
-                # distorsion_orientation=random.randint(0, 2),
-                # background_type=1,  # 0=gaussian, 1=plain white, 2=quasicrystal, 3=image
+                strings=[text],  # The text to be rendered (list of strings or a single string)
+                fonts=[font_path],  # Paths to .ttf/.otf files; defaults to language-specific fonts if empty
+                language="ka",  # Script/language code; helps TRDG pick appropriate fonts/dictionaries
+                size=random.randint(32, 96),  # The height of the resulting image in pixels
+                text_color="#202020,#505050",  # Hex code for font color (can also be a range like "#000,#fff")
+                skewing_angle=2,  # text tilt degrees; used as a max value if random_skew is True
+                random_skew=True,  # If True, randomly skews between 0 and skewing_angle
+                background_type=1,  # 0: Gaussian Noise, 1: White, 2: Quid Paper, 3: Custom Image
+
+                blur=0,  # Radius for Gaussian blur (0 = sharp, higher = blurrier)
+                random_blur=False,  # If True, picks a random blur level between 0 and the blur value
+                distorsion_type=0,  # 0: None, 1: Sine Wave, 2: Cosine Wave, 3: Random distortion
+                distorsion_orientation=0,  # 0: Vertical, 1: Horizontal, 2: Both directions
+                is_handwritten=False,  # If True, applies "handwriting" style offsets (often used with specific fonts)
+                width=-1,  # Fixed width in pixels; -1 allows the width to scale with text length
+                alignment=1,  # 0: Left, 1: Center, 2: Right (only effective if width is set)
+                orientation=0,  # 0: Horizontal (standard), 1: Vertical text
+                space_width=1.0,  # Multiplier for the width of the space character (e.g., 2.0 is double space)
+                margins=(5, 5, 5, 5),  # Padding: (top, left, bottom, right) in pixels
+                fit=False  # If True, crops the image to the tightest bounding box of the text
             )
 
             img = next(generator)

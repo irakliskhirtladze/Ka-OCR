@@ -104,8 +104,6 @@ class GeorgianTokenizer:
     #     return "".join(chars)
 
 
-
-
 class GeorgianOCRDataset(Dataset):
     def __init__(self, df: pd.DataFrame, dataset_dir: str, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer,
                  augment: bool = False):
@@ -115,20 +113,43 @@ class GeorgianOCRDataset(Dataset):
         self.tokenizer = tokenizer  # custom tokenizer
         self.augment = augment
 
-        # augmentation pipeline
         self.aug_pipeline = A.Compose([
-            A.Rotate(limit=(4, 4), border_mode=cv2.BORDER_CONSTANT, fill=(255, 255, 255), p=0.7),
-            A.RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.2, 0.2), p=0.5),
-            A.OneOf([
-                A.GaussianBlur(blur_limit=(3, 3), p=1.0),
-                A.GaussNoise(p=1.0),
-                A.Sharpen(alpha=(0.2, 0.5), p=1.0),
-            ], p=0.6),
-            A.OneOf([
-                A.GridDistortion(p=1.0),
-                A.ElasticTransform(p=1.0),
-                A.Perspective(scale=(0.02, 0.05), p=1.0),
-            ], p=0.3),
+            A.Rotate(
+                limit=(-4, 4),
+                border_mode=cv2.BORDER_CONSTANT,
+                fill=(255, 255, 255),
+                interpolation=cv2.INTER_LINEAR,
+                p=0.5,
+            ),
+            A.GaussNoise(
+                std_range=(25.0, 51.0),
+                mean_range=(0.0, 0.0),
+                per_channel=False,
+                p=0.8,
+            ),
+            A.InvertImg(p=0.01),
+            A.GaussianBlur(
+                blur_limit=(7, 7),
+                sigma_limit=(0.5, 0.5),
+                p=0.5,
+            ),
+            A.ElasticTransform(
+                alpha=1.0,
+                sigma=5.0,
+                border_mode=cv2.BORDER_CONSTANT,
+                fill=(255, 255, 255),
+                interpolation=cv2.INTER_LINEAR,
+                p=0.8,
+            ),
+            A.Affine(
+                scale={"x": (0.3, 1.5), "y": (0.9, 1.1)},
+                fit_output=False,
+                keep_ratio=False,
+                border_mode=cv2.BORDER_CONSTANT,
+                fill=(255, 255, 255),
+                interpolation=cv2.INTER_LINEAR,
+                p=0.5,
+            ),
         ])
 
     def __len__(self) -> int:

@@ -15,10 +15,10 @@ def augment_img(img_path: Path) -> None:
     cv2.setNumThreads(0)
     ink_phase = [
         InkBleed(
-            intensity_range=(0.4, 0.7),
+            intensity_range=(0.2, 0.7),
             kernel_size=random.choice([(5, 5), (3, 3)]),
             severity=(0.2, 0.4),
-            p=0.8,
+            p=0.7,
         ),
         OneOf(
             [
@@ -39,7 +39,7 @@ def augment_img(img_path: Path) -> None:
                     offsets=(10, 20),
                 ),
             ],
-            p=0.8,
+            p=0.7,
         ),
     ]
 
@@ -47,7 +47,7 @@ def augment_img(img_path: Path) -> None:
         ColorPaper(
             hue_range=(0, 255),
             saturation_range=(10, 40),
-            p=0.8,
+            p=0.5,
         ),
         OneOf(
             [
@@ -76,20 +76,20 @@ def augment_img(img_path: Path) -> None:
             ],
             p=0.8,
         ),
-        AugmentationSequence(
-            [
-                NoiseTexturize(
-                    sigma_range=(3, 10),
-                    turbulence_range=(2, 5),
-                    p=0.5,
-                ),
-                BrightnessTexturize(
-                    texturize_range=(0.9, 0.99),
-                    deviation=0.03,
-                    p=0.5,
-                ),
-            ],
-        ),
+        # AugmentationSequence(
+        #     [
+        #         NoiseTexturize(
+        #             sigma_range=(3, 10),
+        #             turbulence_range=(2, 5),
+        #             p=0.5,
+        #         ),
+        #         BrightnessTexturize(
+        #             texturize_range=(0.9, 0.99),
+        #             deviation=0.03,
+        #             p=0.5,
+        #         ),
+        #     ],
+        # ),
     ]
 
     post_phase = [
@@ -105,16 +105,16 @@ def augment_img(img_path: Path) -> None:
                     sigmaX=0,
                 ),
                 DirtyRollers(
-                    line_width_range=(2, 32),
+                    line_width_range=(5, 15),
                     scanline_type=0,
                 ),
             ],
-            p=0.8,
-        ),
-        SubtleNoise(
-            subtle_range=random.randint(5, 10),
             p=0.5,
         ),
+        # SubtleNoise(
+        #     subtle_range=random.randint(5, 10),
+        #     p=0.5,
+        # ),
         Jpeg(
             quality_range=(25, 95),
             p=0.5,
@@ -130,24 +130,8 @@ def augment_img(img_path: Path) -> None:
 
     # Read image, apply pipeline and overwrite img
     img = cv2.imread(str(img_path))
-    if img is None:
-        print(f"Skipping unreadable image: {img_path}")
-        return
     image_augmented = pipeline(img)
-
-    tmp_path = img_path.with_name(f"{img_path.stem}.tmp{os.getpid()}{img_path.suffix}")
-    try:
-        ok = cv2.imwrite(str(tmp_path), image_augmented)
-        if not ok:
-            print(f"Failed to write augmented image: {img_path}")
-            return
-        os.replace(tmp_path, img_path)
-    finally:
-        try:
-            if tmp_path.exists():
-                tmp_path.unlink()
-        except OSError:
-            pass
+    cv2.imwrite(str(img_path), image_augmented)
 
 
 def augment_images() -> None:
@@ -155,7 +139,12 @@ def augment_images() -> None:
     t1 = time.perf_counter()
     images_dir = BASE_DIR / "data" / "raw"
     image_paths = list(images_dir.glob("**/*.png"))
-    num_workers = min(os.cpu_count() or 1, len(image_paths))
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        executor.map(augment_img, image_paths)
+
+    # num_workers = min(os.cpu_count() or 1, len(image_paths))
+    # with ProcessPoolExecutor(max_workers=num_workers) as executor:
+    #     executor.map(augment_img, image_paths)
+
+    for image_path in image_paths:
+        augment_img(image_path)
+
     print(f"augmented in {time.perf_counter() - t1:.2f} seconds")
