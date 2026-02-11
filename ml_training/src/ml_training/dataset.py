@@ -71,12 +71,23 @@ class GeorgianTokenizer:
         return ids
 
     def decode(self, token_ids: list[int]) -> str:
-        """Convert token IDs back to text."""
+        """Convert token IDs back to text (stop at EOS)."""
+        # Be robust if someone passes a tensor
+        if hasattr(token_ids, "tolist"):
+            token_ids = token_ids.tolist()
+
         chars = []
         for token_id in token_ids:
-            if token_id in (self.pad_token_id, self.bos_token_id, self.eos_token_id):
+            # Stop decoding once EOS is generated
+            if token_id == self.eos_token_id:
+                break
+
+            # Skip non-text special tokens
+            if token_id in (self.pad_token_id, self.bos_token_id):
                 continue
+
             chars.append(self.id_to_char.get(token_id, ""))
+
         return "".join(chars)
 
     # def batch_decode(self, sequences: np.ndarray, skip_special_tokens: bool = True) -> list[str]:
