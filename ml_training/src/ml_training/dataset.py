@@ -122,10 +122,10 @@ class GeorgianOCRDataset(Dataset):
                 p=0.5,
             ),
             A.GaussNoise(
-                std_range=(25.0, 51.0),
+                std_range=(0.1, 0.2),
                 mean_range=(0.0, 0.0),
                 per_channel=False,
-                p=0.8,
+                p=0.5,
             ),
             A.InvertImg(p=0.01),
             A.GaussianBlur(
@@ -136,15 +136,6 @@ class GeorgianOCRDataset(Dataset):
             A.ElasticTransform(
                 alpha=1.0,
                 sigma=5.0,
-                border_mode=cv2.BORDER_CONSTANT,
-                fill=(255, 255, 255),
-                interpolation=cv2.INTER_LINEAR,
-                p=0.8,
-            ),
-            A.Affine(
-                scale={"x": (0.3, 1.5), "y": (0.9, 1.1)},
-                fit_output=False,
-                keep_ratio=False,
                 border_mode=cv2.BORDER_CONSTANT,
                 fill=(255, 255, 255),
                 interpolation=cv2.INTER_LINEAR,

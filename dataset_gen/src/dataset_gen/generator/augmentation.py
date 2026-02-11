@@ -12,13 +12,12 @@ from dataset_gen.utils import BASE_DIR
 
 def augment_img(img_path: Path) -> None:
     """Augment a single image with Augraphy for realistic document like look."""
-    cv2.setNumThreads(0)
     ink_phase = [
         InkBleed(
             intensity_range=(0.2, 0.7),
             kernel_size=random.choice([(5, 5), (3, 3)]),
             severity=(0.2, 0.4),
-            p=0.7,
+            p=0.5,
         ),
         OneOf(
             [
@@ -39,43 +38,43 @@ def augment_img(img_path: Path) -> None:
                     offsets=(10, 20),
                 ),
             ],
-            p=0.7,
+            p=0.5,
         ),
     ]
 
     paper_phase = [
         ColorPaper(
-            hue_range=(0, 255),
+            hue_range=(28, 45),
             saturation_range=(10, 40),
             p=0.5,
         ),
-        OneOf(
-            [
-                DelaunayTessellation(
-                    n_points_range=(500, 800),
-                    n_horizontal_points_range=(500, 800),
-                    n_vertical_points_range=(500, 800),
-                    noise_type="random",
-                    color_list="default",
-                    color_list_alternate="default",
-                ),
-                PatternGenerator(
-                    imgx=random.randint(256, 512),
-                    imgy=random.randint(256, 512),
-                    n_rotation_range=(10, 15),
-                    color="random",
-                    alpha_range=(0.25, 0.5),
-                ),
-                VoronoiTessellation(
-                    mult_range=(50, 80),
-                    seed=19829813472,
-                    num_cells_range=(500, 1000),
-                    noise_type="random",
-                    background_value=(200, 255),
-                ),
-            ],
-            p=0.8,
-        ),
+        # OneOf(
+        #     [
+        #         DelaunayTessellation(
+        #             n_points_range=(500, 800),
+        #             n_horizontal_points_range=(500, 800),
+        #             n_vertical_points_range=(500, 800),
+        #             noise_type="random",
+        #             color_list="default",
+        #             color_list_alternate="default",
+        #         ),
+        #         PatternGenerator(
+        #             imgx=random.randint(256, 512),
+        #             imgy=random.randint(256, 512),
+        #             n_rotation_range=(10, 15),
+        #             color="random",
+        #             alpha_range=(0.25, 0.5),
+        #         ),
+        #         VoronoiTessellation(
+        #             mult_range=(50, 80),
+        #             seed=19829813472,
+        #             num_cells_range=(500, 1000),
+        #             noise_type="random",
+        #             background_value=(200, 255),
+        #         ),
+        #     ],
+        #     p=0.5,
+        # ),
         # AugmentationSequence(
         #     [
         #         NoiseTexturize(
@@ -96,16 +95,16 @@ def augment_img(img_path: Path) -> None:
         OneOf(
             [
                 DirtyDrum(
-                    line_width_range=(1, 6),
+                    line_width_range=(1, 4),
                     line_concentration=random.uniform(0.05, 0.15),
-                    direction=random.randint(0, 2),
-                    noise_intensity=random.uniform(0.6, 0.95),
+                    direction=-1,
+                    noise_intensity=random.uniform(0.8, 0.95),
                     noise_value=(64, 224),
                     ksize=random.choice([(3, 3), (5, 5), (7, 7)]),
                     sigmaX=0,
                 ),
                 DirtyRollers(
-                    line_width_range=(5, 15),
+                    line_width_range=(8, 12),
                     scanline_type=0,
                 ),
             ],
@@ -115,17 +114,13 @@ def augment_img(img_path: Path) -> None:
         #     subtle_range=random.randint(5, 10),
         #     p=0.5,
         # ),
-        Jpeg(
-            quality_range=(25, 95),
-            p=0.5,
-        ),
     ]
 
     # Set up pipeline
     pipeline = AugraphyPipeline(
         ink_phase=ink_phase,
-        paper_phase=paper_phase,
-        post_phase=post_phase
+        # paper_phase=paper_phase,
+        # post_phase=post_phase
     )
 
     # Read image, apply pipeline and overwrite img
