@@ -173,7 +173,7 @@ class GeorgianOCRDataset(Dataset):
 
         # augment
         if self.augment:
-            img_np = np.array(img_path)
+            img_np = np.array(new_img)
             augmented = self.aug_pipeline(image=img_np)["image"]
             new_img = Image.fromarray(augmented)
 
