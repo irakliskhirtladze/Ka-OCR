@@ -33,11 +33,7 @@ def train_model(
     encoder_params = [p for p in model.encoder.parameters() if p.requires_grad]
     decoder_params = list(model.decoder.parameters())
 
-    optimizer = AdamW([
-        {"params": encoder_params, "lr": learning_rate},
-        {"params": decoder_params, "lr": learning_rate},
-    ], weight_decay=0.01)
-    # optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
     scaler = GradScaler('cuda', enabled=(device.type == "cuda"))
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-6)
 
