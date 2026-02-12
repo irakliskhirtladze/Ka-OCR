@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from transformers import (TrOCRProcessor, VisionEncoderDecoderModel)
 
-from ml_training.dataset import GeorgianTokenizer, GeorgianOCRDataset
+from ml_training.dataset import GeorgianOCRDataset
 from ml_training.setup import setup_environment, check_env
 from ml_training.training.training_loop import train_model, save_final_model
 
@@ -23,25 +23,25 @@ def main() -> None:
 
     # set up processor and tokenizer
     processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed", use_fast=True)
-    ids = [0, 32, 14, 21, 2, 1, 1, 1]
-    print("Your GeorgianTokenizer decodes ids as:")
-    print(GeorgianTokenizer().decode(ids))
-    print("\nThe original TrOCR tokenizer decodes SAME ids as:")
-    print(processor.tokenizer.decode(ids, skip_special_tokens=False))
-    tokenizer = GeorgianTokenizer(max_length=32)
+    tokenizer = processor.tokenizer
+
+    georgian_chars = list("აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ")
+    tokenizer.add_tokens(georgian_chars)
+    print(tokenizer.tokenize("ა"))
+    print(tokenizer("ა").input_ids)
 
     # Load model and resize token embeddings
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
-    print("original decoder vocab size:", model.decoder.config.vocab_size)
-    print("your custom vocab size:", len(GeorgianTokenizer()))
     # for param in model.encoder.parameters():
     #     param.requires_grad = False  # Freeze entire encoder part of the model
     model.decoder.resize_token_embeddings(len(tokenizer))
+    print("new tokenizer size:", len(tokenizer))
+    print("decoder embedding rows:", model.decoder.get_input_embeddings().weight.shape[0])
 
     # Configure special tokens
-    model.config.decoder_start_token_id = tokenizer.bos_token_id
+    model.config.decoder_start_token_id = tokenizer.cls_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
-    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.eos_token_id = tokenizer.sep_token_id
 
     # set up datasets and loader generators
     train_dataset = GeorgianOCRDataset(train_df, str(paths.dataset_dir), processor, tokenizer, augment=False)

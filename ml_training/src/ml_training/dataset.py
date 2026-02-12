@@ -2,107 +2,30 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
+import unicodedata
 from PIL import Image
 from torch.utils.data import Dataset
 from transformers import TrOCRProcessor
+from transformers import PreTrainedTokenizerBase
 import albumentations as A
 
 
-class GeorgianTokenizer:
-    """
-    Custom tokenizer for Georgian alphabet.
-    It tokenizes characters instead of words since fine-tuned model is supposed to recognize a single word.
-    """
-    def __init__(self, max_length: int = 32):
-        # Special tokens
-        self.pad_token = "<pad>"
-        self.bos_token = "<s>"      # beginning of sequence
-        self.eos_token = "</s>"     # end of sequence
-        self.unk_token = "<unk>"    # unknown character
-
-        # Georgian alphabet (33 letters) and other chars
-        self.georgian_chars = "აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ"
-        self.digits = "0123456789"
-        self.roman = "IVXLCDM"
-        self.punctuation = ".,-!?;:\"'()[]{}/=%+* &$#@~"
-
-        # Build vocabulary: special tokens + Georgian characters
-        self.vocab = [self.bos_token, self.pad_token, self.eos_token, self.unk_token]
-        self.vocab.extend(list(self.georgian_chars))
-        self.vocab.extend(list(self.digits))
-        self.vocab.extend(list(self.roman))
-        self.vocab.extend(list(self.punctuation))
-
-        # Create mappings
-        self.char_to_id = {char: idx for idx, char in enumerate(self.vocab)}
-        self.id_to_char = {idx: char for idx, char in enumerate(self.vocab)}
-
-        # Token IDs for special tokens
-        self.bos_token_id = 0
-        self.pad_token_id = 1
-        self.eos_token_id = 2
-        self.unk_token_id = 3
-
-        self.max_length = max_length
-
-    def __len__(self) -> int:
-        return len(self.vocab)
-
-    def encode(self, text: str, padding: bool = True) -> list[int]:
-        """Convert Georgian text to token IDs."""
-        # Start with BOS token
-        ids = [self.bos_token_id]
-
-        # Convert each character
-        for char in text:
-            ids.append(self.char_to_id.get(char, self.unk_token_id))
-
-        # Add EOS token
-        ids.append(self.eos_token_id)
-
-        # Truncate if too long
-        if len(ids) > self.max_length:
-            ids = ids[:self.max_length - 1] + [self.eos_token_id]
-
-        # Pad if needed
-        if padding:
-            ids.extend([self.pad_token_id] * (self.max_length - len(ids)))
-
-        return ids
-
-    def decode(self, token_ids: list[int]) -> str:
-        """Convert token IDs back to text (stop at EOS)."""
-        # Be robust if someone passes a tensor
-        if hasattr(token_ids, "tolist"):
-            token_ids = token_ids.tolist()
-
-        chars = []
-        for token_id in token_ids:
-            # Stop decoding once EOS is generated
-            if token_id == self.eos_token_id:
-                break
-
-            # Skip non-text special tokens
-            if token_id in (self.pad_token_id, self.bos_token_id):
-                continue
-
-            chars.append(self.id_to_char.get(token_id, ""))
-
-        return "".join(chars)
-
-    # def batch_decode(self, sequences: np.ndarray, skip_special_tokens: bool = True) -> list[str]:
-    #     """Decodes a batch of token IDs (list of lists or torch Tensors)."""
-    #     return [self.decode(seq, skip_special_tokens=skip_special_tokens) for seq in sequences]
-
-
 class GeorgianOCRDataset(Dataset):
-    def __init__(self, df: pd.DataFrame, dataset_dir: str, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer,
-                 augment: bool = False):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        dataset_dir: str,
+        processor: TrOCRProcessor,
+        tokenizer: PreTrainedTokenizerBase,
+        augment: bool = False,
+        max_target_length: int = 32,
+    ):
         self.df = df.reset_index(drop=True)
         self.dataset_dir = dataset_dir
         self.processor = processor
-        self.tokenizer = tokenizer  # custom tokenizer
+        self.tokenizer = tokenizer
         self.augment = augment
+        self.max_target_length = max_target_length
 
         self.aug_pipeline = A.Compose([
             A.Rotate(
@@ -146,6 +69,7 @@ class GeorgianOCRDataset(Dataset):
         """
         img_path = f"{self.dataset_dir}/{self.df.iloc[idx]['file_name']}"
         text = self.df.iloc[idx]['text']  # the text written on the image file
+        text = unicodedata.normalize('NFC', str(text))
 
         # Open and process image0
         img = Image.open(img_path).convert("RGB")
@@ -170,10 +94,17 @@ class GeorgianOCRDataset(Dataset):
 
         # Use Processor for Normalization
         pixel_values = self.processor(new_img, return_tensors="pt").pixel_values
-        labels = self.tokenizer.encode(text)
-        labels = [label if label != self.tokenizer.pad_token_id else -100 for label in labels]
+        tokenized = self.tokenizer(
+            text,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_target_length,
+            return_tensors="pt",
+        )
+        labels = tokenized.input_ids.squeeze(0)
+        labels[labels == self.tokenizer.pad_token_id] = -100
 
         return {
             "pixel_values": pixel_values.squeeze(),
-            "labels": torch.tensor(labels)
+            "labels": labels
         }

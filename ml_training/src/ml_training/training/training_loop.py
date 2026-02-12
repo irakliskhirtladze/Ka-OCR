@@ -6,8 +6,8 @@ from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.amp import GradScaler, autocast
 from transformers import TrOCRProcessor
+from transformers import PreTrainedTokenizerBase
 
-from ml_training.dataset import GeorgianTokenizer
 from ml_training.setup import Paths, check_env
 from ml_training.training.checkpoints import load_latest_state, save_state
 from ml_training.training.validation import validate_model
@@ -20,7 +20,7 @@ def train_model(
         test_loader: torch.utils.data.DataLoader,
         loader_generator: torch.Generator,
         device: torch.device,
-        tokenizer: GeorgianTokenizer,
+        tokenizer: PreTrainedTokenizerBase,
         epochs: int = 10,
         save_every: int = 1000,
         max_grad_norm: float = 1.0,
@@ -145,7 +145,7 @@ def train_model(
                 shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
 
 
-def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor, tokenizer: GeorgianTokenizer):
+def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor, tokenizer: PreTrainedTokenizerBase):
     """Save the final trained model and processor."""
     model_path = paths.output_dir / "model"
     processor_path = paths.output_dir / "processor"
@@ -154,22 +154,8 @@ def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProce
     model.save_pretrained(model_path)
     processor.save_pretrained(processor_path)
 
-    # Save custom tokenizer vocab
-    tokenizer_path = paths.output_dir / "tokenizer_vocab.json"
-
-    with open(tokenizer_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            'char_to_id': tokenizer.char_to_id,
-            'id_to_char': {str(k): v for k, v in tokenizer.id_to_char.items()},
-            'pad_token_id': tokenizer.pad_token_id,
-            'bos_token_id': tokenizer.bos_token_id,
-            'eos_token_id': tokenizer.eos_token_id,
-            'unk_token_id': tokenizer.unk_token_id,
-        }, f, ensure_ascii=False, indent=2)
-
     print(f"Model saved to: {model_path}")
     print(f"Processor saved to: {processor_path}")
-    print(f"Tokenizer vocab saved to: {tokenizer_path}")
 
     # Sync to Drive on Colab
     if check_env() == "colab":
