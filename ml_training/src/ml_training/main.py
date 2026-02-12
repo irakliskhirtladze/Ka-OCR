@@ -23,10 +23,17 @@ def main() -> None:
 
     # set up processor and tokenizer
     processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed", use_fast=True)
+    ids = [0, 32, 14, 21, 2, 1, 1, 1]
+    print("Your GeorgianTokenizer decodes ids as:")
+    print(GeorgianTokenizer().decode(ids))
+    print("\nThe original TrOCR tokenizer decodes SAME ids as:")
+    print(processor.tokenizer.decode(ids, skip_special_tokens=False))
     tokenizer = GeorgianTokenizer(max_length=32)
 
     # Load model and resize token embeddings
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
+    print("original decoder vocab size:", model.decoder.config.vocab_size)
+    print("your custom vocab size:", len(GeorgianTokenizer()))
     # for param in model.encoder.parameters():
     #     param.requires_grad = False  # Freeze entire encoder part of the model
     model.decoder.resize_token_embeddings(len(tokenizer))
