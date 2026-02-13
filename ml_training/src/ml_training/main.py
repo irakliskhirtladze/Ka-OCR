@@ -24,7 +24,6 @@ def main() -> None:
     # set up processor and tokenizer
     processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed", use_fast=True)
     tokenizer = processor.tokenizer
-
     georgian_chars = list("აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ")
     tokenizer.add_tokens(georgian_chars)
     print(tokenizer.tokenize("ა"))
