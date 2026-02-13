@@ -5,8 +5,6 @@ import torch
 from torchvision.utils import save_image
 from PIL import Image
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-
-from ml_training.dataset import GeorgianTokenizer
 from ml_training.setup import Paths
 
 
@@ -53,7 +51,7 @@ def save_debug_samples(dataloader, tokenizer, output_dir, n_images=200):
 
 def test_against_real_images(paths: Paths, model, processor, tokenizer):
     print("Testing against real images...")
-    ka_model_path = paths.drive_output_dir / "best_model.pt"  # The path to your .pt file
+    ka_model_path = paths.drive_output_dir / "best_model.pt"  # The path to .pt file
     sample_imgs_dir = Path("/content/drive/MyDrive/Colab Notebooks/trocr-ka/data/")
     if not sample_imgs_dir.exists():
         print("sample images dir does not exist")

@@ -142,12 +142,12 @@ def main() -> None:
         else:
             print("Please enter a valid input.")
 
-    # # Image augmentation
-    # augment_images()
+    # Image augmentation
+    augment_images()
 
-    # # Test online augmentation with albumentations
-    # from dataset_gen.temp import test_online_aug_images
-    # test_online_aug_images()
+    # Test online augmentation with albumentations
+    from dataset_gen.temp import test_online_aug_images
+    test_online_aug_images()
 
     # Zipping the dataset
     while True:

@@ -33,19 +33,19 @@ class GeorgianOCRDataset(Dataset):
                 border_mode=cv2.BORDER_CONSTANT,
                 fill=(255, 255, 255),
                 interpolation=cv2.INTER_LINEAR,
-                p=0.5,
+                p=0.7,
             ),
             A.GaussNoise(
                 std_range=(0.1, 0.2),
                 mean_range=(0.0, 0.0),
                 per_channel=False,
-                p=0.5,
+                p=0.7,
             ),
             A.InvertImg(p=0.01),
             A.GaussianBlur(
                 blur_limit=(7, 7),
                 sigma_limit=(0.5, 0.5),
-                p=0.5,
+                p=0.7,
             ),
             A.ElasticTransform(
                 alpha=1.0,
@@ -53,7 +53,7 @@ class GeorgianOCRDataset(Dataset):
                 border_mode=cv2.BORDER_CONSTANT,
                 fill=(255, 255, 255),
                 interpolation=cv2.INTER_LINEAR,
-                p=0.5,
+                p=0.7,
             ),
         ])
 

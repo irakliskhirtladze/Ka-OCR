@@ -7,6 +7,7 @@ from transformers import (TrOCRProcessor, VisionEncoderDecoderModel)
 from ml_training.dataset import GeorgianOCRDataset
 from ml_training.setup import setup_environment, check_env
 from ml_training.training.training_loop import train_model, save_final_model
+from ml_training.utils import save_debug_samples
 
 
 def main() -> None:
@@ -52,24 +53,27 @@ def main() -> None:
                               num_workers=2 if check_env() == "colab" else 6)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    # set up device and run training loop
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    train_model(
-        paths,
-        model,
-        train_loader,
-        test_loader,
-        loader_generator,
-        device,
-        tokenizer,
-        epochs=20,
-        save_every=1000,
-        max_grad_norm=1.0,
-        learning_rate=1e-5,
-        resume_latest=True
-    )
-    save_final_model(paths, model, processor, tokenizer)
+    # quick check of augmented samples
+    save_debug_samples(train_loader, tokenizer, str(paths.output_dir), 100)
+
+    # # set up device and run training loop
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.to(device)
+    # train_model(
+    #     paths,
+    #     model,
+    #     train_loader,
+    #     test_loader,
+    #     loader_generator,
+    #     device,
+    #     tokenizer,
+    #     epochs=20,
+    #     save_every=1000,
+    #     max_grad_norm=1.0,
+    #     learning_rate=1e-5,
+    #     resume_latest=True
+    # )
+    # save_final_model(paths, model, processor, tokenizer)
 
 
     # # ============= seq2seqtrainer version =============

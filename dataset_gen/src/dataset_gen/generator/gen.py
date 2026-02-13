@@ -120,7 +120,7 @@ def _generate_for_font(args: tuple) -> list[dict]:
                 strings=[text],  # The text to be rendered (list of strings or a single string)
                 fonts=[font_path],  # Paths to .ttf/.otf files; defaults to language-specific fonts if empty
                 language="ka",  # Script/language code; helps TRDG pick appropriate fonts/dictionaries
-                size=random.randint(32, 96),  # The height of the resulting image in pixels
+                size=random.randint(40, 96),  # The height of the resulting image in pixels
                 text_color="#202020,#505050",  # Hex code for font color (can also be a range like "#000,#fff")
                 skewing_angle=2,  # text tilt degrees; used as a max value if random_skew is True
                 random_skew=True,  # If True, randomly skews between 0 and skewing_angle
