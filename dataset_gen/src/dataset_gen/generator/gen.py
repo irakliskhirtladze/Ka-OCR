@@ -3,7 +3,7 @@ import re
 import time
 
 from trdg.generators import GeneratorFromStrings
-from dataset_gen.utils import BASE_DIR
+from dataset_gen.utils import PATHS
 from pathlib import Path
 import csv
 import random
@@ -11,12 +11,9 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 
 
-def load_dictionary(dict_path: Path = None) -> tuple[list, list]:
+def load_dictionary() -> tuple[list, list]:
     """Load dictionary once and return words with weights for efficient sampling"""
-    if dict_path is None:
-        dict_path = BASE_DIR / "generator" / "dictionaries" / "ka_dictionary.json"
-
-    with open(dict_path, "r", encoding="utf-8") as f:
+    with open(PATHS.dict_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     words = data["words"]
@@ -169,17 +166,14 @@ def generate_imgs(num_images_per_font: int):
     """Generate synthetic images for all fonts.
 
     Args:
+        paths: Paths object containing necessary paths
         num_images_per_font: Number of images to generate per font
         parallel_threshold: Use parallel processing if num_images_per_font >= this value
     """
-    ka_font_dir = BASE_DIR / "src" / "dataset_gen" / "generator" / "fonts" / "ka"
-    output_dir = BASE_DIR / "data" / "raw"
-    dict_path = BASE_DIR / "src" / "dataset_gen" / "dictionaries" / "ka_dictionary.json"
-
     # Get all font files (ttf and otf)
-    fonts = [str(f) for f in ka_font_dir.glob("*") if f.suffix.lower() in ['.ttf', '.otf']]
+    fonts = [str(f) for f in PATHS.ka_font_dir.glob("*") if f.suffix.lower() in ['.ttf', '.otf']]
     if not fonts:
-        print(f"No font files (.ttf, .otf) found in {ka_font_dir}")
+        print(f"No font files (.ttf, .otf) found in {PATHS.ka_font_dir}")
         return
 
     # Check which fonts don't support special chars
@@ -192,8 +186,6 @@ def generate_imgs(num_images_per_font: int):
     if fonts_no_specials:
         print(f"Fonts without number support: {', '.join(fonts_no_specials)}\n")
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     print(f"Generating images for {len(fonts)} fonts...")
     print(f"Images per font: {num_images_per_font}")
     print(f"Total images to generate: {len(fonts) * num_images_per_font}")
@@ -201,12 +193,13 @@ def generate_imgs(num_images_per_font: int):
 
     # Load dictionary
     print("\nLoading dictionary...")
-    word_list, weights = load_dictionary(dict_path)
+    word_list, weights = load_dictionary()
     print(f"Loaded {len(word_list)} words with frequency weights")
 
     # Prepare args for each font
     font_args = [
-        (font_path, num_images_per_font, word_list, weights, str(output_dir), fonts_without_number_support[font_path])
+        (font_path, num_images_per_font, word_list, weights, str(PATHS.synthetic_dir),
+         fonts_without_number_support[font_path])
         for font_path in fonts
     ]
 
@@ -221,11 +214,10 @@ def generate_imgs(num_images_per_font: int):
     print(f"\nDone in {(t2 - t1)} seconds")
 
     # Write Labels to CSV
-    csv_path = BASE_DIR / "data" / "metadata.csv"
-    with open(csv_path, mode="w", encoding="utf-8", newline="") as f:
+    with open(PATHS.synthetic_metadata_path, mode="w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["file_name", "text"])
         writer.writeheader()
         writer.writerows(metadata)
 
-    print(f"\n✓ Finished! {len(metadata)} images saved to {output_dir}")
-    print(f"✓ Labels saved to {csv_path}")
+    print(f"\n✓ Finished! {len(metadata)} images saved to {PATHS.synthetic_dir}")
+    print(f"✓ Labels saved to {PATHS.synthetic_metadata_path}")

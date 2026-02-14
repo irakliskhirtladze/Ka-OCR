@@ -10,64 +10,73 @@ from dotenv import load_dotenv
 
 from dataset_gen.generator.augmentation import augment_img, augment_images
 from dataset_gen.generator.gen import generate_imgs
-from dataset_gen.utils import BASE_DIR
+from dataset_gen.utils import BASE_DIR, Paths, PATHS
 
 
-def write_version(file_path: Path):
+def write_version() -> None:
     """Writes version timestamp to file (UTC)."""
     current_timestamp = datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S")
-    with open(file_path, "w", encoding="utf-8") as f:
+    with open(PATHS.version_txt_path, "w", encoding="utf-8") as f:
         f.write(current_timestamp)
-    print(f"Version {current_timestamp} (UTC) saved to {file_path}")
+    print(f"Version {current_timestamp} (UTC) saved to {PATHS.version_txt_path}")
 
 
-def extend_metadata_csv(synth_metadate_csv: Path, real_aug_metadata_csv: Path) -> None:
+def extend_metadata_csv() -> None:
     """Take metadata.csv and extend it with real_augmented.csv"""
-    synth_metadata_df = pd.read_csv(synth_metadate_csv)
-    real_aug_metadata_df = pd.read_csv(real_aug_metadata_csv)
+    synth_metadata_df = pd.read_csv(PATHS.synth_metadata_csv)
+    real_aug_metadata_df = pd.read_csv(PATHS.real_metadata_path)
 
     df = pd.concat([synth_metadata_df, real_aug_metadata_df], ignore_index=True)
     df.to_csv(BASE_DIR / "data/metadata.csv", index=False)
 
 
 def zip_dataset() -> None:
-    """Zip the dataset preserving font subdirectory structure. Add real augmented images and write version file"""
-    data_dir = BASE_DIR / "data"
-    raw_dir = data_dir / "raw"
-    metadata_file = data_dir / "metadata.csv"
-    zip_path = data_dir / "ka-ocr.zip"
-
+    """Zip the dataset preserving font subdirectory structure."""
     # Verify synth data exists
-    if not raw_dir.exists() or not metadata_file.exists():
+    if not PATHS.synthetic_dir.exists() or not PATHS.synthetic_metadata_path.exists():
         print("Error: Dataset not found. Run generate_imgs() first.")
         return
 
     # Find all images in synth data subdirectories
-    image_files = list(raw_dir.glob("**/*.png"))
-    if not image_files:
-        print("Error: No images found in data/raw/")
+    synth_image_files = list(PATHS.synthetic_dir.glob("**/*.png"))
+    if not synth_image_files:
+        print("Error: No synthetic images found")
+        return
+
+    # Find all images in real data folder
+    real_image_files = list(PATHS.real_images_dir.glob("**/*.png"))
+    if not real_image_files:
+        print("Error: No real images found")
         return
 
     # Create zip file preserving subdirectory structure
-    print(f"\nCreating zip file with {len(image_files)} images...")
+    print(f"\nCreating zip file with {len(synth_image_files)} images...")
     t1 = time.perf_counter()
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        num_images = len(image_files)
-        for i, img_file in enumerate(image_files):
-            print(f"\radding synthetic image {i + 1}/{num_images}...", end="", flush=True)
-            arcname = img_file.relative_to(raw_dir)
-            zipf.write(img_file, arcname=arcname)
+    with zipfile.ZipFile(PATHS.zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # ============ add synthetic data folder ============
+        zipf.write(PATHS.synthetic_metadata_path, arcname="synthetic/metadata.csv")
 
-        # Add metadata.csv to zip root
-        zipf.write(metadata_file, arcname="metadata.csv")
+        for i, img_file in enumerate(synth_image_files):
+            arcname = Path("synthetic") / img_file.relative_to(PATHS.synthetic_dir)
+            zipf.write(img_file, arcname=str(arcname))
+            if i % 100 == 0:  # Print every 100 to save console overhead
+                print(f"\rAdding synthetic: {i + 1}/{len(synth_image_files)}...", end="", flush=True)
 
-    zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
+        # ============ add real images folder ============
+        zipf.write(PATHS.real_metadata_path, arcname="real/metadata.csv")
+
+        for i, img_file in enumerate(real_image_files):
+            arcname = Path("real") / img_file.name  # Assuming real files aren't in subfolders
+            zipf.write(img_file, arcname=str(arcname))
+            print(f"\rAdding real: {i + 1}/{len(real_image_files)}...", end="", flush=True)
+
+    zip_size_mb = PATHS.zip_path.stat().st_size / (1024 * 1024)
     t2 = time.perf_counter()
-    print(f"\nCreated {zip_path.name} ({zip_size_mb:.2f} MB)")
+    print(f"\nCreated {PATHS.zip_path.name} ({zip_size_mb:.2f} MB)")
     print(f"Zipped in {(t2 - t1):.2f} seconds")
 
     # Generate version file
-    write_version(data_dir / "version.txt")
+    write_version()
 
 
 def dataset_to_hf() -> None:
@@ -124,6 +133,9 @@ def dataset_to_hf() -> None:
 
 
 def main() -> None:
+    # setup necessary paths
+    PATHS.synthetic_dir.mkdir(parents=True, exist_ok=True)
+
     # Image generation
     while True:
         user_input = input("Do you want to generate synthetic images? (Y/N): ")
@@ -145,9 +157,9 @@ def main() -> None:
     # Image augmentation
     augment_images()
 
-    # Test online augmentation with albumentations
-    from dataset_gen.temp import test_online_aug_images
-    test_online_aug_images()
+    # # Test online augmentation with albumentations
+    # from dataset_gen.temp import test_online_aug_images
+    # test_online_aug_images()
 
     # Zipping the dataset
     while True:
