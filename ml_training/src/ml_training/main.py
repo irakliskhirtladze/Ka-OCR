@@ -86,7 +86,7 @@ def main() -> None:
     # seq2sec_trainer.save_model(str(paths.output_dir / "best_model_final"))
 
 
-    # ================ INFERENCE ====================
+    # # ================ INFERENCE ====================
     # from ml_training.utils import test_against_real_images
     # test_against_real_images(paths, model, processor, tokenizer)
 
