@@ -42,9 +42,11 @@ def main() -> None:
     model.config.eos_token_id = tokenizer.sep_token_id
 
     # set up datasets and loader generators
-    train_dataset = GeorgianOCRDataset(train_df, str(paths.dataset_dir), processor, tokenizer, augment=True)
-    validation_dataset = GeorgianOCRDataset(validation_df, str(paths.dataset_dir), processor, tokenizer, augment=True)
-    test_dataset = GeorgianOCRDataset(test_df, str(paths.dataset_dir), processor, tokenizer)
+    train_dataset = GeorgianOCRDataset(train_df, str(paths.dataset_dir / "synthetic"), processor, tokenizer,
+                                       augment=True)
+    validation_dataset = GeorgianOCRDataset(validation_df, str(paths.dataset_dir / "real"), processor, tokenizer,
+                                            augment=True)
+    test_dataset = GeorgianOCRDataset(test_df, str(paths.dataset_dir / "real"), processor, tokenizer)
 
     loader_generator = torch.Generator()
     loader_generator.manual_seed(42)
