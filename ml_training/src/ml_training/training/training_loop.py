@@ -17,7 +17,7 @@ def train_model(
         paths: Paths,
         model: torch.nn.Module,
         train_loader: torch.utils.data.DataLoader,
-        test_loader: torch.utils.data.DataLoader,
+        validation_loader: torch.utils.data.DataLoader,
         loader_generator: torch.Generator,
         device: torch.device,
         tokenizer: PreTrainedTokenizerBase,
@@ -100,7 +100,7 @@ def train_model(
                     print(f"===== Saved Checkpoint {checkpoint_name} =====")
 
                     print(f"Validating at Batch {batch_idx}...")
-                    current_cer = validate_model(model, test_loader, tokenizer, device)
+                    current_cer = validate_model(model, validation_loader, tokenizer, device)
                     scheduler.step(current_cer)
                     print(f"Batch {batch_idx} CER: {current_cer:.4f}")
 
@@ -130,7 +130,7 @@ def train_model(
 
         # --- END OF EPOCH SAVE
         print(f"Epoch {epoch} complete. Performing final validation and save...")
-        current_cer = validate_model(model, test_loader, tokenizer, device, max_batches=None, num_beams=4)
+        current_cer = validate_model(model, validation_loader, tokenizer, device, max_batches=None, num_beams=4)
         print(f"CER after {epoch} epochs: {current_cer:.4f}")
         scheduler.step(current_cer)
 
