@@ -145,7 +145,7 @@ def train_model(
                 shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
 
 
-def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor, tokenizer: PreTrainedTokenizerBase):
+def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor):
     """Save the final trained model and processor."""
     model_path = paths.output_dir / "model"
     processor_path = paths.output_dir / "processor"
