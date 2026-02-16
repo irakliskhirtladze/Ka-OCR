@@ -148,26 +148,3 @@ def train_model(
             torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
             if check_env() == "colab":
                 shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
-
-
-def save_final_model(paths: Paths, model: torch.nn.Module, processor: TrOCRProcessor):
-    """Save the final trained model and processor."""
-    model_path = paths.output_dir / "model"
-    processor_path = paths.output_dir / "processor"
-
-    # Save model and processor
-    model.save_pretrained(model_path)
-    processor.save_pretrained(processor_path)
-
-    print(f"Model saved to: {model_path}")
-    print(f"Processor saved to: {processor_path}")
-
-    # Sync to Drive on Colab
-    if check_env() == "colab":
-        # Create a zip of the output for easy download
-        zip_path = paths.output_dir / "final_model.zip"
-        shutil.make_archive(str(zip_path.with_suffix('')), 'zip', paths.output_dir)
-
-        # Copy zip to Drive
-        shutil.copy(zip_path, paths.drive_output_dir / "final_model.zip")
-        print(f"Model zip synced to Drive: {paths.drive_output_dir / 'final_model.zip'}")

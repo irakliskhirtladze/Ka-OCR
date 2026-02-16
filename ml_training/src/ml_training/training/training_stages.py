@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 
 from ml_training.dataset import GeorgianOCRDataset
 from ml_training.setup import Paths, check_env
-from ml_training.training.training_loop import train_model, save_final_model
+from ml_training.training.training_loop import train_model
 
 
 def run_training_stage(stage: int,
@@ -124,5 +124,3 @@ def run_training_stage(stage: int,
         save_every=1000,
         resume_latest=resume_from_checkpoint,
     )
-
-    save_final_model(paths, model, processor)

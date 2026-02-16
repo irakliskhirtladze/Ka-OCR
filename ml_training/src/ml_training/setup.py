@@ -58,6 +58,7 @@ def dataset_needs_update(hf_repo: str, hf_token: str, local_version_path: Path) 
 
 @dataclass
 class Paths:
+    base_dir: Path
     dataset_dir: Path
     output_dir: Path
     checkpoint_dir: Path
@@ -77,6 +78,7 @@ def setup_environment() -> Paths:
     if check_env() == "colab":  # set up colab session with google drive for permanent storage
         base_dir = Path("/content")
         paths = Paths(
+            base_dir=base_dir,
             dataset_dir=base_dir / "data",
             output_dir=base_dir / "output",
             checkpoint_dir=base_dir / "checkpoints",
@@ -116,6 +118,7 @@ def setup_environment() -> Paths:
         load_dotenv(base_dir / ".env")
 
         paths = Paths(
+            base_dir=base_dir,
             dataset_dir=base_dir / "data",
             output_dir=base_dir / "output",
             checkpoint_dir=base_dir / "checkpoints"
