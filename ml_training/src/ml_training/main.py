@@ -22,8 +22,6 @@ def main() -> None:
 
     # Load model and resize token embeddings
     model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
-    # for param in model.encoder.parameters():
-    #     param.requires_grad = False  # Freeze entire encoder part of the model
     model.decoder.resize_token_embeddings(len(tokenizer))
 
     # Configure special tokens
@@ -31,7 +29,7 @@ def main() -> None:
     model.config.pad_token_id = tokenizer.pad_token_id
     model.config.eos_token_id = tokenizer.sep_token_id
 
-    run_training_stage(1, paths, model, processor, tokenizer)
+    run_training_stage(2, paths, model, processor, tokenizer)
 
     # # ============= seq2seqtrainer version =============
     # print("Starting Seq2Seq Training...")

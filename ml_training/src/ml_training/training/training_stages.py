@@ -20,17 +20,21 @@ def run_training_stage(stage: int,
     # Prefix the filenames so they point correctly from the parent dir
     synth_df['file_name'] = "synthetic/" + synth_df['file_name'].astype(str)
 
+    # State variables for the trainer
+    resume_from_checkpoint = True
+
     if stage == 1:
-        print("--- STAGE 1: PRETRAINING ---")
+        print("\n--- STAGE 1: PRETRAINING ---")
         train_df, val_df = train_test_split(synth_df, test_size=0.01, random_state=42)
 
         lr = 1e-5
         epochs = 10
         batch_size = 16
         sampler = None  # Standard shuffle is fine for synth-only
+        checkpoint_prefix = "s1"
 
     else:
-        print("--- STAGE 2: FINETUNING ---")
+        print("\n--- STAGE 2: FINETUNING ---")
         real_df = pd.read_csv(paths.dataset_dir / "real" / "metadata.csv")
         real_df['file_name'] = "real/" + real_df['file_name'].astype(str)
 
@@ -44,13 +48,27 @@ def run_training_stage(stage: int,
         train_df = pd.concat([real_train, synth_refresher], ignore_index=True)
         val_df = real_val  # Validate only on real data in Stage 2
 
-        lr = 1e-6  # 10x smaller for finetuning
-        epochs = 20
+        lr = 5e-6  # smaller for finetuning
+        epochs = 30
         batch_size = 8
+        checkpoint_prefix = "s2"
 
         # Setup Weighted Sampler to ensure Real images are seen often
         weights = [10.0] * len(real_train) + [1.0] * len(synth_refresher)
         sampler = WeightedRandomSampler(weights, num_samples=len(train_df), replacement=True)
+
+        # AUTOMATIC WEIGHT LOADING LOGIC
+        # Check if we already have a Stage 2 checkpoint (if so, we just resume)
+        s2_checkpoints = list(paths.output_dir.glob("checkpoint_s2_*.pt"))
+        if not s2_checkpoints:
+            # We are starting Stage 2 for the first time. Load Stage 1 Best Model.
+            best_s1 = paths.drive_output_dir / "best_model.pt"
+            if best_s1.exists():
+                print(f"First run of Stage 2. Loading Stage 1 peaks weights from {best_s1}")
+                model.load_state_dict(torch.load(best_s1, map_location='cpu'))
+                resume_from_checkpoint = False  # Don't try to load optimizer state from Stage 1
+            else:
+                print("Warning: Stage 2 started but no best_model.pt found from Stage 1!")
 
     # Initialize Datasets. Note: root_dir is paths.dataset_dir
     train_dataset = GeorgianOCRDataset(
@@ -100,10 +118,11 @@ def run_training_stage(stage: int,
         loader_generator,
         device,
         tokenizer,
+        stage_prefix=checkpoint_prefix,
         epochs=epochs,
         learning_rate=lr,
         save_every=1000,
-        resume_latest=True
+        resume_latest=resume_from_checkpoint,
     )
 
     save_final_model(paths, model, processor)

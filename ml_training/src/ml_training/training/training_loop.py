@@ -21,6 +21,7 @@ def train_model(
         loader_generator: torch.Generator,
         device: torch.device,
         tokenizer: PreTrainedTokenizerBase,
+        stage_prefix: str = "s1",
         epochs: int = 10,
         save_every: int = 1000,
         max_grad_norm: float = 1.0,
@@ -94,7 +95,7 @@ def train_model(
                     print(f"Epoch: {epoch} | Batch: {batch_idx}/{len(train_loader)} | Loss: {loss.item():.4f}")
 
                 if batch_idx > 0 and batch_idx % save_every == 0:
-                    checkpoint_name = f"checkpoint_e{epoch}_b{batch_idx}.pt"
+                    checkpoint_name = f"checkpoint_{stage_prefix}_e{epoch}_b{batch_idx}.pt"
                     save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(), best_cer,
                                checkpoint_name, loader_generator, scheduler=scheduler)
                     print(f"===== Saved Checkpoint {checkpoint_name} =====")
@@ -107,6 +108,9 @@ def train_model(
                     if current_cer < best_cer:
                         best_cer = current_cer
                         print(f"New Best Model found! (CER: {current_cer:.4f}) Saving best_model.pt...")
+                        stage_best_name = f"best_model_{stage_prefix}.pt"
+                        torch.save(model.state_dict(), paths.output_dir / stage_best_name)
+                        # Also overwrite the global best_model.pt so the next stage can find it easily
                         torch.save(model.state_dict(), paths.output_dir / "best_model.pt")
                         if check_env() == "colab":
                             shutil.copy(paths.output_dir / "best_model.pt", paths.drive_output_dir / "best_model.pt")
@@ -135,7 +139,8 @@ def train_model(
         scheduler.step(current_cer)
 
         save_state(paths, epoch, batch_idx, model, optimizer, scaler, loss.item(),
-                   current_cer, f"checkpoint_e{epoch}_b{batch_idx}.pt", loader_generator, scheduler=scheduler)
+                   current_cer, f"checkpoint_{stage_prefix}_e{epoch}_b{batch_idx}.pt", loader_generator,
+                   scheduler=scheduler)
 
         if current_cer < best_cer:
             best_cer = current_cer
