@@ -218,3 +218,5 @@ ml_training/data/
 ml_training/checkpoints/
 ml_training/output/
 ml_training/.env
+
+api/models/
