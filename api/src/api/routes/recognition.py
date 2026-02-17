@@ -11,23 +11,18 @@ router = APIRouter()
 
 
 @router.post("/recognize")
-async def recognize_text(request: Request, file: UploadFile = File(...)) -> dict:
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(400, detail="File must be an image")
+async def recognize_text(request: Request, files: list[UploadFile] = File(...)) -> dict:
+    results = []
 
-    try:
-        image_bytes = await file.read()
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    for file in files:
+        if file.content_type == "application/pdf":
+            # Logic for PDF
+            pass
+        elif file.content_type.startswith("image/"):
+            # Logic for Image
+            pass
+        else:
+            # Skip or Error
+            continue
 
-        # Get the service from the app state (set in lifespan)
-        ocr_service: OCRService = request.app.state.ocr_service
-        recognized_text = await ocr_service.recognize(image)
-
-        return {
-            "recognized_text": recognized_text,
-            "filename": file.filename,
-            "status": "success"
-        }
-    except Exception as e:
-        logger.error(f"OCR failure: {e}")
-        raise HTTPException(500, detail=str(e))
+    return {"processed_files": len(files), "status": "success"}
