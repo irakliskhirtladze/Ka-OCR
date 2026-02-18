@@ -11,6 +11,7 @@ dependencies = [
     "fastapi[standard]>=0.129.0",
     "opencv-python-headless>=4.13.0.92",
     "pillow>=12.1.1",
+    "pymupdf>=1.27.1",
     "python-multipart>=0.0.22",
     "torch>=2.10.0",
     "transformers>=5.2.0",

@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 import torch
 from fastapi import FastAPI
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+from ultralytics import YOLO
+
 from api.core.config import settings
 from api.routes import recognition
 from api.services.ocr import OCRService
@@ -19,16 +21,16 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # STARTUP
-    logger.info(f"Loading model: {settings.MODEL_ID}")
+    logger.info(f"Loading model: {settings.TROCR_MODEL_ID}")
 
-    processor = TrOCRProcessor.from_pretrained(settings.MODEL_ID)
-    model = VisionEncoderDecoderModel.from_pretrained(settings.MODEL_ID)
-
+    processor = TrOCRProcessor.from_pretrained(settings.TROCR_MODEL_ID)
+    trocr_model = VisionEncoderDecoderModel.from_pretrained(settings.TROCR_MODEL_ID)
     if torch.cuda.is_available():
-        model.to("cuda")
+        trocr_model.to("cuda")
+    yolo_model = YOLO().to(settings.DEVICE)
 
     # Store the Service in state so routes can access it
-    app.state.ocr_service = OCRService(processor, model)
+    app.state.ocr_service = OCRService(processor, trocr_model)
 
     yield
 

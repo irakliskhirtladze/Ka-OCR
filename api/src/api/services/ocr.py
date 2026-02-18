@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from PIL.Image import Image
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
@@ -10,7 +11,7 @@ class OCRService:
         self.model = model
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    async def recognize(self, image: Image) -> str:
+    async def recognize(self, image: np.ndarray) -> str:
         """Takes an image as input and returns recognized text from it."""
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
         pixel_values = pixel_values.to(self.device)
@@ -29,7 +30,7 @@ class WordDetectorService:
     def __init__(self, model_path: str = "yolov8n.pt"):
         self.model = YOLO(model_path)
 
-    async def detect_words(self, image: Image) -> list[tuple]:
+    async def detect_words(self, image: np.ndarray) -> list[tuple]:
         """Takes an image as input and returns a list of word bounding box coordinates detected."""
         results = self.model(image, conf=0.25, verbose=False)[0]
 

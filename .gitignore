@@ -220,3 +220,7 @@ ml_training/output/
 ml_training/.env
 
 api/models/
+api/sample_files/
+
+word_detection/dataset/
+word_detection/source_docs/
