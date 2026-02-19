@@ -30,7 +30,7 @@ class DocumentGenerator:
         y_c = (t + b) / (2 * self.height)
         return 0, x_c, y_c, w, h  # 0 for class "word"
 
-    def render_document(self, mode: str = "block"):
+    def render_document(self, mode: str = "block") -> tuple[np.ndarray, list[tuple]]:
         """Main method to render document-like image"""
         cv_img = self._generate_background()
 
@@ -65,15 +65,18 @@ class DocumentGenerator:
             if y_cursor + line_height > self.height - 40:
                 break
 
-            # draw word
-            draw.text((x_cursor, y_cursor), word, font=self.font, fill=(0, 0, 0))
-
-            # save word bbox coords for YOLO
-            current_bbox = draw.textbbox((x_cursor, y_cursor), word, font=self.font)
+            x1, y1, x2, y2 = draw.textbbox((x_cursor, y_cursor), word, font=self.font)
+            yolo_bbox = (
+                0,  # class label
+                (x1 + x2) / 2 / self.width,  # center_x normalized
+                (y1 + y2) / 2 / self.height,  # center_y normalized
+                (x2 - x1) / self.width,  # width normalized
+                (y2 - y1) / self.height,  # height normalized
+            )
 
             # move cursor
             x_cursor += word_w + space_w
-            bbox_list.append(current_bbox)
+            bbox_list.append(yolo_bbox)
 
         return np.array(pil_img), bbox_list
 
@@ -183,10 +186,17 @@ class DocumentGenerator:
 
                     x_cursor = x
                     for word in line.split():
-                        word_bbox = draw.textbbox((x_cursor, y), word, font=self.font)
+                        x1, y1, x2, y2 = draw.textbbox((x_cursor, y), word, font=self.font)
                         draw.text((x_cursor, y), word, font=self.font, fill=(0, 0, 0))
-                        bbox_list.append(word_bbox)
-                        x_cursor += (word_bbox[2] - word_bbox[0]) + space_w
+                        yolo_bbox = (
+                            0,  # class label
+                            (x1 + x2) / 2 / self.width,  # center_x normalized
+                            (y1 + y2) / 2 / self.height,  # center_y normalized
+                            (x2 - x1) / self.width,  # width normalized
+                            (y2 - y1) / self.height,  # height normalized
+                        )
+                        bbox_list.append(yolo_bbox)
+                        x_cursor += (x2 - x1) + space_w
 
                     y += lh + line_gap
 
@@ -207,9 +217,9 @@ class DocumentGenerator:
 
         if self._font_not_supports_specials():
             ka_chars = set("აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ")
-            filtered_words = [word for word in words if all(char in ka_chars for char in word)]
+            filtered_words = [word for word in words if word and all(char in ka_chars for char in word)]
         else:
-            filtered_words = words
+            filtered_words = [word for word in words if word]
 
         total_count = len(filtered_words)
 
