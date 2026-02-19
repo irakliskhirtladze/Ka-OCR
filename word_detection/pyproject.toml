@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "augraphy>=8.2.6",
+    "opencv-python-headless>=4.13.0.92",
+]
 
 [project.scripts]
 word-detection = "word_detection:main"
