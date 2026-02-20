@@ -1,9 +1,15 @@
+import itertools
+import time
+import zipfile
 from pathlib import Path
 import cv2
 import numpy as np
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from random import randint, choice
+
+from word_detection.data_factory.augmentation import augment_doc
+from word_detection.utils import PATHS
 
 
 class DocumentGenerator:
@@ -66,6 +72,7 @@ class DocumentGenerator:
                 break
 
             x1, y1, x2, y2 = draw.textbbox((x_cursor, y_cursor), word, font=self.font)
+            draw.text((x_cursor, y_cursor), word, font=self.font, fill=(0, 0, 0))
             yolo_bbox = (
                 0,  # class label
                 (x1 + x2) / 2 / self.width,  # center_x normalized
@@ -230,3 +237,113 @@ class DocumentGenerator:
         return filtered_words[start_idx: start_idx + num_to_take]
 
 
+def generate_docs() -> None:
+    texts: list[str] = []
+    for text_file_path in PATHS.text_files_dir.glob("*.txt"):
+        with open(text_file_path, "r", encoding="utf-8") as text_file:
+            texts.append(text_file.read())
+
+    font_files = itertools.chain(
+        PATHS.fonts_dir.glob("*.ttf"),
+        PATHS.fonts_dir.glob("*.otf")
+    )
+    t1 = time.perf_counter()
+    for font_path in font_files:
+        for i in range(2):
+            file_name = f"{str(font_path.stem)}-{i}"
+            doc_generator = DocumentGenerator(
+                file_name,
+                randint(640, 2000),
+                randint(640, 2000),
+                font_path,
+                randint(11, 28),
+                choice(texts)
+            )
+
+            img, bboxes = doc_generator.render_document(mode=choice(["table", "block"]))
+
+            img = augment_doc(img)
+
+            # for bbox in bboxes:
+            #     cls, cx, cy, w, h = bbox
+            #     x1 = int((cx - w / 2) * doc_generator.width)
+            #     y1 = int((cy - h / 2) * doc_generator.height)
+            #     x2 = int((cx + w / 2) * doc_generator.width)
+            #     y2 = int((cy + h / 2) * doc_generator.height)
+            #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
+
+            cv2.imwrite(str(PATHS.dataset_dir / file_name) + ".png", img)
+            with open(str(PATHS.dataset_dir / file_name) + ".txt", "w", encoding="utf-8") as f:
+                for bbox in bboxes:
+                    cls, cx, cy, w, h = bbox
+                    f.write(f"{int(cls)} {cx:.6f} {cy:.6f} {w:.6f} {h:.6f}\n")
+
+    print(f"Finished in {time.perf_counter() - t1} seconds.")
+
+
+def zip_dataset() -> None:
+    dataset_files = list(PATHS.dataset_dir.glob("*"))
+    print(f"\nCreating zip file with {len(dataset_files)} files...")
+    t1 = time.perf_counter()
+    with zipfile.ZipFile(PATHS.zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for i, file in enumerate(dataset_files):
+            arcname = Path("YOLO_ka_words") / file.name  # if files aren't in subfolders
+            zipf.write(file, arcname=str(arcname))
+
+    zip_size_mb = PATHS.zip_path.stat().st_size / (1024 * 1024)
+    t2 = time.perf_counter()
+    print(f"\nCreated {PATHS.zip_path.name} ({zip_size_mb:.2f} MB)")
+    print(f"Zipped in {(t2 - t1):.2f} seconds")
+
+
+def dataset_to_hf() -> None:
+    """Upload existing zip file to Hugging Face Hub."""
+    load_dotenv()
+
+    # Check for required environment variables
+    hf_token = os.getenv("HF_TOKEN")
+    hf_dataset_repo = os.getenv("HF_DATASET_REPO")
+
+    if not hf_token:
+        print("Error: HF_TOKEN not found in .env file")
+        return
+
+    if not hf_dataset_repo:
+        print("Error: HF_DATASET_REPO not found in .env file")
+        return
+
+    zip_path = BASE_DIR / "data" / "ka-ocr.zip"
+
+    if not zip_path.exists():
+        print(f"Error: Zip file not found at {zip_path}")
+        return
+
+    version_path = BASE_DIR / "data" / "version.txt"
+    if not version_path.exists():
+        print(f"Warning: version.txt not found at {version_path}")
+
+    # Push to Hugging Face
+    print(f"\nPushing to Hugging Face: {hf_dataset_repo}")
+    try:
+        api = HfApi()
+        api.upload_file(
+            path_or_fileobj=str(zip_path),
+            path_in_repo="ka-ocr.zip",
+            repo_id=hf_dataset_repo,
+            repo_type="dataset",
+            token=hf_token
+        )
+
+        # Upload version.txt separately for easy version checking
+        if version_path.exists():
+            api.upload_file(
+                path_or_fileobj=str(version_path),
+                path_in_repo="version.txt",
+                repo_id=hf_dataset_repo,
+                repo_type="dataset",
+                token=hf_token
+            )
+
+        print(f"Successfully uploaded to https://huggingface.co/datasets/{hf_dataset_repo}")
+    except Exception as e:
+        print(f"Failed to upload to Hugging Face: {e}")

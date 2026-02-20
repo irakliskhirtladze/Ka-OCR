@@ -6,7 +6,7 @@ from pathlib import Path
 class Paths:
     base_dir: Path = Path(__file__).resolve().parent.parent.parent
     dataset_dir: Path = base_dir / "dataset"
-    source_docs_dir: Path = base_dir / "source_docs"
+    zip_path: Path = dataset_dir / "YOLO_ka_words.zip"
     fonts_dir: Path = base_dir / "src" / "word_detection" / "data_factory" / "fonts"
     text_files_dir: Path = base_dir / "src" / "word_detection" / "data_factory" / "text_source"
 
