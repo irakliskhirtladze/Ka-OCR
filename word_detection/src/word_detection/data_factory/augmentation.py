@@ -23,11 +23,11 @@ def augment_doc(img: np.ndarray) -> np.ndarray:
     scanner_only_pipeline = AugraphyPipeline(
         post_phase=[OneOf([
             DirtyRollers(),
-            BadPhotoCopy(noise_type=2,
-                         noise_iteration=(1, 1),  # Keep this at 1 to prevent "stacking" noise
-                         noise_size=(1, 2),  # Smaller noise particles
-                         noise_value=(0, 10),  # Very low intensity (Default is usually much higher)
-                         )
+            # BadPhotoCopy(noise_type=2,
+            #              noise_iteration=(1, 1),  # Keep this at 1 to prevent "stacking" noise
+            #              noise_size=(1, 2),  # Smaller noise particles
+            #              noise_value=(0, 10),  # Very low intensity (Default is usually much higher)
+            #              )
         ], p=1)]
     )
 

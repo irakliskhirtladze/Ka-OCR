@@ -1,4 +1,5 @@
 import itertools
+import os
 import time
 import zipfile
 from pathlib import Path
@@ -7,6 +8,8 @@ import numpy as np
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from random import randint, choice
+from huggingface_hub import HfApi
+from dotenv import load_dotenv
 
 from word_detection.data_factory.augmentation import augment_doc
 from word_detection.utils import PATHS
@@ -58,8 +61,15 @@ class DocumentGenerator:
 
         bbox_list = []
         for word in words:
-            # get word size
-            bbox = draw.textbbox((x_cursor, y_cursor), word, font=self.font)
+            word = word.strip()
+            if not word:
+                continue
+
+            try:
+                bbox = draw.textbbox((x_cursor, y_cursor), word, font=self.font)
+            except OSError:
+                print(f"Skipping corrupt word/font combo: {word} with {self.font_path.name}")
+                continue
             word_w = bbox[2] - bbox[0]
 
             # if word does not fit on line go to next line
@@ -114,7 +124,12 @@ class DocumentGenerator:
 
             while idx < len(words):
                 candidate = " ".join(current_line_words + [words[idx]])
-                bbox = draw.textbbox((0, 0), candidate, font=self.font)
+                try:
+                    bbox = draw.textbbox((0, 0), candidate, font=self.font)
+                except OSError:
+                    print(f"Skipping corrupt word/font combo: '{words[idx]}' with {self.font_path.name}")
+                    idx += 1
+                    continue
                 line_w = bbox[2] - bbox[0]
                 line_h = bbox[3] - bbox[1]
 
@@ -193,7 +208,16 @@ class DocumentGenerator:
 
                     x_cursor = x
                     for word in line.split():
-                        x1, y1, x2, y2 = draw.textbbox((x_cursor, y), word, font=self.font)
+                        word = word.strip()
+                        if not word:
+                            continue
+
+                        try:
+                            x1, y1, x2, y2 = draw.textbbox((x_cursor, y), word, font=self.font)
+                        except OSError:
+                            print(f"Skipping corrupt word/font combo: {word} with {self.font_path.name}")
+                            continue
+
                         draw.text((x_cursor, y), word, font=self.font, fill=(0, 0, 0))
                         yolo_bbox = (
                             0,  # class label
@@ -249,7 +273,7 @@ def generate_docs() -> None:
     )
     t1 = time.perf_counter()
     for font_path in font_files:
-        for i in range(2):
+        for i in range(29):
             file_name = f"{str(font_path.stem)}-{i}"
             doc_generator = DocumentGenerator(
                 file_name,
@@ -293,14 +317,14 @@ def zip_dataset() -> None:
     zip_size_mb = PATHS.zip_path.stat().st_size / (1024 * 1024)
     t2 = time.perf_counter()
     print(f"\nCreated {PATHS.zip_path.name} ({zip_size_mb:.2f} MB)")
-    print(f"Zipped in {(t2 - t1):.2f} seconds")
+    print(f"Zipped in {(t2 - t1):.2f} seconds\n")
 
 
 def dataset_to_hf() -> None:
     """Upload existing zip file to Hugging Face Hub."""
-    load_dotenv()
-
-    # Check for required environment variables
+    load_dotenv(str(PATHS.env_path))
+    #
+    # # Check for required environment variables
     hf_token = os.getenv("HF_TOKEN")
     hf_dataset_repo = os.getenv("HF_DATASET_REPO")
 
@@ -312,38 +336,46 @@ def dataset_to_hf() -> None:
         print("Error: HF_DATASET_REPO not found in .env file")
         return
 
-    zip_path = BASE_DIR / "data" / "ka-ocr.zip"
-
-    if not zip_path.exists():
-        print(f"Error: Zip file not found at {zip_path}")
+    if not PATHS.zip_path.exists():
+        print(f"Error: Zip file not found at {PATHS.zip_path}")
         return
 
-    version_path = BASE_DIR / "data" / "version.txt"
-    if not version_path.exists():
-        print(f"Warning: version.txt not found at {version_path}")
+    # version_path = BASE_DIR / "data" / "version.txt"
+    # if not version_path.exists():
+    #     print(f"Warning: version.txt not found at {version_path}")
 
     # Push to Hugging Face
     print(f"\nPushing to Hugging Face: {hf_dataset_repo}")
     try:
         api = HfApi()
         api.upload_file(
-            path_or_fileobj=str(zip_path),
-            path_in_repo="ka-ocr.zip",
+            path_or_fileobj=str(PATHS.zip_path),
+            path_in_repo="YOLO_ka_words.zip",
             repo_id=hf_dataset_repo,
             repo_type="dataset",
             token=hf_token
         )
 
-        # Upload version.txt separately for easy version checking
-        if version_path.exists():
-            api.upload_file(
-                path_or_fileobj=str(version_path),
-                path_in_repo="version.txt",
-                repo_id=hf_dataset_repo,
-                repo_type="dataset",
-                token=hf_token
-            )
+        # # Upload version.txt separately for easy version checking
+        # if version_path.exists():
+        #     api.upload_file(
+        #         path_or_fileobj=str(version_path),
+        #         path_in_repo="version.txt",
+        #         repo_id=hf_dataset_repo,
+        #         repo_type="dataset",
+        #         token=hf_token
+        #     )
 
         print(f"Successfully uploaded to https://huggingface.co/datasets/{hf_dataset_repo}")
     except Exception as e:
         print(f"Failed to upload to Hugging Face: {e}")
+
+
+def main() -> None:
+    generate_docs()
+    # zip_dataset()
+    # dataset_to_hf()
+
+
+if __name__ == '__main__':
+    main()

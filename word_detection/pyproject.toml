@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
     "albumentations>=2.0.8",
     "augraphy>=8.2.6",
+    "dotenv>=0.9.9",
+    "huggingface>=0.0.1",
+    "huggingface-hub>=1.4.1",
     "opencv-python-headless>=4.13.0.92",
 ]
 
