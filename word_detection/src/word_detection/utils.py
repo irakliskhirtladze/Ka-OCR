@@ -12,9 +12,11 @@ class Paths:
     output_dir: Path = base_dir / "output"
     checkpoints_dir: Path = base_dir / "checkpoints"
 
-    drive_dataset_zip_path: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/data/YOLO_ka_words.zip"
-    drive_output_dir: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/output"
-    drive_checkpoints_dir: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/checkpoints"
+    # Change this line in your @dataclass
+    drive_dataset_zip_path: Path = Path(
+        "/content/drive/MyDrive/Colab Notebooks/word_detection/data/YOLO_ka_words.zip").resolve()
+    drive_output_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/output").resolve()
+    drive_checkpoints_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/checkpoints").resolve()
 
     env_path: Path = base_dir / ".env"
 
@@ -49,7 +51,6 @@ def setup_environment() -> None:
     print(f"running on {env}")
 
     if check_env() == "colab":  # set up colab session with google drive for permanent storage
-        print(f"base dir: {PATHS.base_dir}")
         if len(list(PATHS.dataset_dir.iterdir())) <= 0:
             print("\nExtracting dataset zip from Drive to session storage...")
             try:
