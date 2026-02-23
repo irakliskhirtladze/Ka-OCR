@@ -12,9 +12,9 @@ class Paths:
     output_dir: Path = base_dir / "output"
     checkpoints_dir: Path = base_dir / "checkpoints"
 
-    drive_dataset_zip_path: Path = base_dir / "drive/MyDrive/Colab Notebooks/word_detection/data/YOLO_ka_words.zip"
-    drive_output_dir: Path = base_dir / "drive/MyDrive/Colab Notebooks/word_detection/output",
-    drive_checkpoints_dir: Path = base_dir / "drive/MyDrive/Colab Notebooks/word_detection/checkpoints",
+    drive_dataset_zip_path: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/data/YOLO_ka_words.zip"
+    drive_output_dir: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/output"
+    drive_checkpoints_dir: Path = "content/drive/MyDrive/Colab Notebooks/word_detection/checkpoints"
 
     env_path: Path = base_dir / ".env"
 
