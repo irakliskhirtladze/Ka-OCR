@@ -50,7 +50,7 @@ def setup_environment() -> None:
 
     if check_env() == "colab":  # set up colab session with google drive for permanent storage
         print(f"base dir: {PATHS.base_dir}")
-        if not PATHS.dataset_dir.exists():
+        if len(list(PATHS.dataset_dir.iterdir())) <= 0:
             print("\nExtracting dataset zip from Drive to session storage...")
             try:
                 # -j: junk paths (do not create internal folders);-q "quiet", don't print filenames;
