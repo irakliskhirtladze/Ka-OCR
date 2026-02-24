@@ -1,3 +1,4 @@
+import torch
 from ultralytics import YOLO
 
 from word_detection.utils import PATHS, sync_to_drive, check_env
@@ -11,6 +12,8 @@ def on_train_epoch_end(trainer) -> None:
 
 
 def train(resume: bool = False) -> None:
+    device_id = 0 if torch.cuda.is_available() else "cpu"
+
     # Always look locally
     model_path = PATHS.checkpoints_dir / "last.pt" if resume else "yolo26n.pt"
     model = YOLO(str(model_path))
@@ -21,7 +24,7 @@ def train(resume: bool = False) -> None:
         data=PATHS.base_dir / "ka_dataset.yaml",
         epochs=100,
         imgsz=640,
-        device=0,  # GPU index
+        device=device_id,  # GPU index
         project=str(PATHS.output_dir),
         name="ka_word_detector",
         resume=resume,
