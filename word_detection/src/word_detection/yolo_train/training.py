@@ -30,7 +30,8 @@ def train(resume: bool = False) -> None:
         name="ka_word_detector",
         resume=resume,
         save=True,
-        box=7.5,  # Increased from default 7.5 to penalize missed detections more
+        box=10,  # Increased from default 7.5 to penalize missed detections more
         cls=0.5,  # Keep classification loss lower
-        dfl=1.5   # Keep distribution focal loss moderate
+        dfl=1.5,   # Keep distribution focal loss moderate
+        batch=-1
     )
