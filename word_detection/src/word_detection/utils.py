@@ -1,3 +1,4 @@
+import inspect
 import os
 import subprocess
 from dataclasses import dataclass
@@ -88,13 +89,16 @@ def sync_to_drive() -> None:
 
 
 def create_yaml() -> None:
-    yaml_content = f"""
+    # cleandoc removes the leading spaces caused by the function's indentation
+    yaml_content = inspect.cleandoc(f"""
         path: {str(PATHS.dataset_dir.absolute())}
         train: .
         val: .
-        
+
         names:
           0: word
-    """
+    """)
+
     with open(PATHS.base_dir / "ka_dataset.yaml", "w") as f:
-        f.write(yaml_content.strip())
+        f.write(yaml_content)
+    print(f"YAML created successfully at {PATHS.base_dir / 'ka_dataset.yaml'}")
