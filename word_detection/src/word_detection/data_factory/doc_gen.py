@@ -372,9 +372,9 @@ def dataset_to_hf() -> None:
 
 
 def main() -> None:
-    # generate_docs()
-    zip_dataset()
-    dataset_to_hf()
+    generate_docs()
+    # zip_dataset()
+    # dataset_to_hf()
 
 
 if __name__ == '__main__':
