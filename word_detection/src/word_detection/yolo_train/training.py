@@ -14,8 +14,7 @@ def on_train_epoch_end(trainer) -> None:
 def train(resume: bool = False) -> None:
     device_id = 0 if torch.cuda.is_available() else "cpu"
 
-    # Always look locally
-    model_path = PATHS.checkpoints_dir / "last.pt" if resume else "yolo26s.pt"
+    model_path = PATHS.weights_dir / "last.pt" if resume else "yolo26s.pt"
     model = YOLO(str(model_path))
 
     model.add_callback("on_train_epoch_end", on_train_epoch_end)

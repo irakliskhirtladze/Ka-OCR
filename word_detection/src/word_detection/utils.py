@@ -15,7 +15,7 @@ class Paths:
     val_dir: Path = dataset_dir / "val"
     zip_path: Path = dataset_dir / "YOLO_ka_words.zip"
     output_dir: Path = base_dir / "output"
-    checkpoints_dir: Path = base_dir / "checkpoints"
+    weights_dir: Path = output_dir / "ka_word_detector" / "weights"
 
     env_path: Path = base_dir / ".env"
 
@@ -26,14 +26,12 @@ class Paths:
     drive_dataset_zip_path: Path = Path(
         "/content/drive/MyDrive/Colab Notebooks/word_detection/data/YOLO_ka_words.zip").resolve()
     drive_output_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/output").resolve()
-    drive_checkpoints_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/checkpoints").resolve()
 
     def __post_init__(self) -> None:
         self.dataset_dir.mkdir(parents=True, exist_ok=True)
         self.train_dir.mkdir(parents=True, exist_ok=True)
         self.val_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
 
 PATHS = Paths()
@@ -82,18 +80,16 @@ def setup_environment() -> None:
         else:
             print("Dataset already present in session storage.")
 
-        if PATHS.drive_checkpoints_dir.exists():
-            print("Syncing checkpoints from Drive...")
-            subprocess.run(["cp", "-r", f"{PATHS.drive_checkpoints_dir}/.", str(PATHS.checkpoints_dir)], check=True)
+        if PATHS.drive_output_dir.exists():
+            print("Restoring previous training output from Drive...")
+            subprocess.run(["cp", "-r", f"{PATHS.drive_output_dir}/.", str(PATHS.output_dir)], check=True)
 
 
 def sync_to_drive() -> None:
-    """Backup local outputs and checkpoints to Drive."""
+    """Backup local training output to Drive."""
     PATHS.drive_output_dir.mkdir(parents=True, exist_ok=True)
-    PATHS.drive_checkpoints_dir.mkdir(parents=True, exist_ok=True)
     print("Syncing to Drive...")
     subprocess.run(["cp", "-r", f"{PATHS.output_dir}/.", str(PATHS.drive_output_dir)], check=True)
-    subprocess.run(["cp", "-r", f"{PATHS.checkpoints_dir}/.", str(PATHS.drive_checkpoints_dir)], check=True)
 
 
 def create_yaml() -> None:
