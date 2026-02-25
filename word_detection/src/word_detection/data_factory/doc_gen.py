@@ -308,12 +308,12 @@ def generate_docs() -> None:
 
 
 def zip_dataset() -> None:
-    dataset_files = list(PATHS.dataset_dir.glob("*"))
+    dataset_files = [f for f in PATHS.dataset_dir.rglob("*") if f.is_file() and f != PATHS.zip_path]
     print(f"\nCreating zip file with {len(dataset_files)} files...")
     t1 = time.perf_counter()
     with zipfile.ZipFile(PATHS.zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for i, file in enumerate(dataset_files):
-            arcname = Path("YOLO_ka_words") / file.name  # if files aren't in subfolders
+        for file in dataset_files:
+            arcname = Path("YOLO_ka_words") / file.relative_to(PATHS.dataset_dir)
             zipf.write(file, arcname=str(arcname))
 
     zip_size_mb = PATHS.zip_path.stat().st_size / (1024 * 1024)
@@ -374,8 +374,8 @@ def dataset_to_hf() -> None:
 
 
 def main() -> None:
-    generate_docs()
-    # zip_dataset()
+    # generate_docs()
+    zip_dataset()
     # dataset_to_hf()
 
 

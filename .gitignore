@@ -224,3 +224,5 @@ api/sample_files/
 
 word_detection/dataset/
 word_detection/source_docs/
+word_detection/checkpoints/
+word_detection/output/

@@ -1,6 +1,7 @@
 import inspect
 import os
 import subprocess
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -27,7 +28,7 @@ class Paths:
     drive_output_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/output").resolve()
     drive_checkpoints_dir: Path = Path("/content/drive/MyDrive/Colab Notebooks/word_detection/checkpoints").resolve()
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.dataset_dir.mkdir(parents=True, exist_ok=True)
         self.train_dir.mkdir(parents=True, exist_ok=True)
         self.val_dir.mkdir(parents=True, exist_ok=True)
@@ -45,51 +46,60 @@ PATHS = Paths()
 
 
 def check_env() -> str:
-    """Determines if running in Colab, or Locally"""
-    # Colab-specific check
-    # Check for 'google.colab' module or unique Colab env var
+    """Determines if running in Colab or locally."""
     if 'COLAB_RELEASE_TAG' in os.environ or 'COLAB_BACKEND_VERSION' in os.environ:
         return "colab"
-
     return "local"
 
 
-def setup_environment() -> None:
-    """
-    Setup environment for model training depending on where the session is running.
-    Returns dataclass instance with paths to dataset, checkpoints, outputs, etc.
-    """
-    env = check_env()
-    print(f"running on {env}")
+def _dataset_is_populated() -> bool:
+    """True if train_dir contains at least one image — guards against empty subdirs created by Paths init."""
+    return any(PATHS.train_dir.glob("*.png"))
 
-    if check_env() == "colab":  # set up colab session with google drive for permanent storage
-        if not any(PATHS.dataset_dir.iterdir()):
-            print("\nExtracting dataset zip from Drive to session storage...")
+
+def _extract_dataset_zip(zip_path: Path) -> None:
+    """Extract dataset zip into dataset_dir, stripping the top-level YOLO_ka_words/ prefix."""
+    with zipfile.ZipFile(zip_path, 'r') as archive:
+        for member in archive.namelist():
             try:
-                # -j: junk paths (do not create internal folders);-q "quiet", don't print filenames;
-                # -o overwrite existing files; -d specifies the destination dir
-                cmd = ["unzip", "-j", "-o", "-q", str(PATHS.drive_dataset_zip_path), "-d", str(PATHS.dataset_dir)]
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
-                print("Extraction successful!")
-            except subprocess.CalledProcessError as e:
-                print(f"Extraction failed!\nError: {e.stderr}")
+                relative = Path(member).relative_to("YOLO_ka_words")
+            except ValueError:
+                continue
+            target = PATHS.dataset_dir / relative
+            if member.endswith('/'):
+                target.mkdir(parents=True, exist_ok=True)
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(archive.read(member))
+
+
+def setup_environment() -> None:
+    """Setup session for model training; handles dataset extraction and checkpoint sync from Drive."""
+    env = check_env()
+    print(f"Running on: {env}")
+
+    if env == "colab":
+        if not _dataset_is_populated():
+            if not PATHS.drive_dataset_zip_path.exists():
+                raise FileNotFoundError(f"Dataset zip not found on Drive: {PATHS.drive_dataset_zip_path}")
+            print(f"Extracting dataset from Drive...")
+            _extract_dataset_zip(PATHS.drive_dataset_zip_path)
+            print("Extraction complete.")
         else:
-            print("Dataset already copied to colab session.")
+            print("Dataset already present in session storage.")
 
         if PATHS.drive_checkpoints_dir.exists():
-            print("Syncing checkpoints from Drive to session...")
-            # Use cp -r to bring previous work into the local working dir
-            subprocess.run(["cp", "-r", f"{PATHS.drive_checkpoints_dir}/.", str(PATHS.checkpoints_dir)])
-
-    else:  # Setup for local session
-        pass
+            print("Syncing checkpoints from Drive...")
+            subprocess.run(["cp", "-r", f"{PATHS.drive_checkpoints_dir}/.", str(PATHS.checkpoints_dir)], check=True)
 
 
 def sync_to_drive() -> None:
-    """Call this to backup local outputs/checkpoints to Drive"""
-    print("Backing up to Drive...")
-    subprocess.run(["cp", "-r", f"{PATHS.output_dir}/.", str(PATHS.drive_output_dir)])
-    subprocess.run(["cp", "-r", f"{PATHS.checkpoints_dir}/.", str(PATHS.drive_checkpoints_dir)])
+    """Backup local outputs and checkpoints to Drive."""
+    PATHS.drive_output_dir.mkdir(parents=True, exist_ok=True)
+    PATHS.drive_checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    print("Syncing to Drive...")
+    subprocess.run(["cp", "-r", f"{PATHS.output_dir}/.", str(PATHS.drive_output_dir)], check=True)
+    subprocess.run(["cp", "-r", f"{PATHS.checkpoints_dir}/.", str(PATHS.drive_checkpoints_dir)], check=True)
 
 
 def create_yaml() -> None:
