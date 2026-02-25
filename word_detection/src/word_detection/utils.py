@@ -10,6 +10,8 @@ class Paths:
     # local paths
     base_dir: Path = Path(__file__).resolve().parent.parent.parent
     dataset_dir: Path = base_dir / "dataset"
+    train_dir: Path = dataset_dir / "train"
+    val_dir: Path = dataset_dir / "val"
     zip_path: Path = dataset_dir / "YOLO_ka_words.zip"
     output_dir: Path = base_dir / "output"
     checkpoints_dir: Path = base_dir / "checkpoints"
@@ -27,6 +29,8 @@ class Paths:
 
     def __post_init__(self):
         self.dataset_dir.mkdir(parents=True, exist_ok=True)
+        self.train_dir.mkdir(parents=True, exist_ok=True)
+        self.val_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
@@ -92,8 +96,8 @@ def create_yaml() -> None:
     # cleandoc removes the leading spaces caused by the function's indentation
     yaml_content = inspect.cleandoc(f"""
         path: {str(PATHS.dataset_dir.absolute())}
-        train: .
-        val: .
+        train: train
+        val: val
 
         names:
           0: word
