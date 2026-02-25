@@ -6,7 +6,7 @@ from word_detection.utils import PATHS, sync_to_drive, check_env
 
 def on_train_epoch_end(trainer) -> None:
     """Callback triggered at the end of every training epoch."""
-    print(f"\nEpoch {trainer.epoch + 1} finished. Syncing to Drive...")
+    print(f"Epoch {trainer.epoch + 1} finished.\n\n")
     if check_env() == "colab":
         sync_to_drive()
 

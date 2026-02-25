@@ -35,12 +35,6 @@ class Paths:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
 
-    @property
-    def yolo_project_dir(self) -> str:
-        if check_env() == "colab":
-            return str(self.drive_output_dir)
-        return str(self.output_dir)
-
 
 PATHS = Paths()
 
