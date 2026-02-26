@@ -11,6 +11,7 @@ class Paths:
     # local paths
     base_dir: Path = Path(__file__).resolve().parent.parent.parent
     dataset_dir: Path = base_dir / "dataset"
+    real_docs_dir: Path = base_dir / "real_docs"
     train_dir: Path = dataset_dir / "train"
     val_dir: Path = dataset_dir / "val"
     zip_path: Path = dataset_dir / "YOLO_ka_words.zip"

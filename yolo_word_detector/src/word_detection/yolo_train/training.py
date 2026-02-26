@@ -6,7 +6,7 @@ from word_detection.utils import PATHS, sync_to_drive, check_env
 
 def on_train_epoch_end(trainer) -> None:
     """Callback triggered at the end of every training epoch."""
-    print(f"Epoch {trainer.epoch + 1} finished.\n\n")
+    print(f"Epoch {trainer.epoch + 1} finished.")
     if check_env() == "colab":
         sync_to_drive()
 
@@ -23,7 +23,7 @@ def train(resume: bool = False) -> None:
         data=PATHS.base_dir / "ka_dataset.yaml",
         epochs=100,
         imgsz=1024,  # Increased from 640 to better handle larger images
-        scale=0.5,  # Multi-scale training: ±50% image size variation
+        scale=0.3,  # Multi-scale training: ±30% image size variation
         device=device_id,  # GPU index
         project=str(PATHS.output_dir),
         name="ka_word_detector",
@@ -35,6 +35,6 @@ def train(resume: bool = False) -> None:
         batch=-1,
         mosaic=0.0,      # disable: mixes 4 images — wrong for single-document layout
         copy_paste=0.0,  # disable: not meaningful for document word detection
-        cache=True,      # cache images in RAM — synthetic images are small
+        cache="disk",      # cache images in disk for deterministic training
         patience=20,     # early stop if val mAP50 stagnates for 20 epochs
     )

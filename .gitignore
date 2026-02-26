@@ -209,20 +209,23 @@ __marimo__/
 
 data/
 
-dataset_gen/data/
-dataset_gen/temp.py
-dataset_gen/.venv/
-dataset_gen/.env
+trocr_dataset_gen/data/
+trocr_dataset_gen/temp.py
+trocr_dataset_gen/.venv/
+trocr_dataset_gen/.env
 
-ml_training/data/
-ml_training/checkpoints/
-ml_training/output/
-ml_training/.env
+trocr_training/.venv/
+trocr_training/data/
+trocr_training/checkpoints/
+trocr_training/output/
+trocr_training/.env
 
 api/models/
 api/sample_files/
 
-word_detection/dataset/
-word_detection/source_docs/
-word_detection/checkpoints/
-word_detection/output/
+yolo_word_detector/.venv/
+yolo_word_detector/dataset/
+yolo_word_detector/source_docs/
+yolo_word_detector/checkpoints/
+yolo_word_detector/output/
+yolo_word_detector/real_docs/

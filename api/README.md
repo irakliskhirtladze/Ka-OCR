@@ -1,4 +1,4 @@
 Start app with
 ```bash
-uv run uvicorn api.main:app --reload --port 8080
+uv run python -m uvicorn api.main:app --reload --port 8080
 ```
