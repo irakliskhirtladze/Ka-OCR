@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+**/__pycache__/
 *.py[codz]
 *$py.class
 
@@ -208,6 +209,7 @@ __marimo__/
 
 
 data/
+**/augraphy_cache/
 
 trocr_dataset_gen/data/
 trocr_dataset_gen/temp.py

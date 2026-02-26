@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+import asyncio
+
 import cv2
 import numpy as np
 import torch
@@ -56,21 +58,23 @@ class OCR:
         """Crops a single text region from an image using its bounding box."""
         return img[region.y1:region.y2, region.x1:region.x2]
 
-    async def recognize(self, image: np.ndarray) -> str:
-        """Runs TrOCR on a cropped region image and returns recognized text."""
-        pixel_values = self.processor(image, return_tensors="pt").pixel_values.to(self.device)
+    def _recognize_batch_sync(self, images: list[np.ndarray]) -> list[str]:
+        """Runs TrOCR on a batch of cropped region images in a single forward pass (blocking)."""
+        inputs = self.processor(images, return_tensors="pt", padding=True).to(self.device)
         generated_ids = self.recognizer.generate(
-            pixel_values,
+            inputs.pixel_values,
             max_length=64,
-            num_beams=4,
-            early_stopping=True,
+            num_beams=1,  # greedy decoding — ~4x faster than beam=4, negligible quality loss for short words
         )
-        return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+        return [t.strip() for t in self.processor.batch_decode(generated_ids, skip_special_tokens=True)]
 
     async def process_image(self, img_item: ImageItem) -> ImageItem:
-        """Full OCR pipeline for one image: detect bboxes → crop regions → recognize text."""
-        self.detect_bboxes(img_item)
-        for region in img_item.regions:
-            cropped = self.crop_region(img_item.img, region)
-            region.text = await self.recognize(cropped)
+        """Full OCR pipeline for one image: detect bboxes → batch-recognize all regions."""
+        await asyncio.to_thread(self.detect_bboxes, img_item)
+        if not img_item.regions:
+            return img_item
+        crops = [self.crop_region(img_item.img, r) for r in img_item.regions]
+        texts = await asyncio.to_thread(self._recognize_batch_sync, crops)
+        for region, text in zip(img_item.regions, texts):
+            region.text = text
         return img_item
